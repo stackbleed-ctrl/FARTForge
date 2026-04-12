@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════
+   FARTARENA GLOBAL STYLES — Biopunk / Toxic Lab Cyberpunk
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Core Palette ─────────────────────────────────────────────── */
+  --toxic-green:     #00ff88;
+  --toxic-green-dim: #00cc6a;
+  --toxic-green-glow:#00ff8855;
+  --magenta:         #ff00ff;
+  --magenta-dim:     #cc00cc;
+  --purple:          #8b00ff;
+  --purple-mid:      #6600cc;
+  --sulfur-yellow:   #ffd700;
+  --stink-brown:     #8b4513;
+  --gas-blue:        #00cfff;
+  --void-black:      #030308;
+  --panel-bg:        rgba(0, 10, 5, 0.85);
+  --border-glow:     rgba(0, 255, 136, 0.3);
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  --font-display: 'Orbitron', monospace;
+  --font-mono:    'Share Tech Mono', monospace;
+  --font-body:    'Rajdhani', sans-serif;
+}
+
+/* ── Base resets ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--void-black);
+  color: white;
+  font-family: var(--font-body);
+  scrollbar-width: thin;
+  scrollbar-color: var(--toxic-green) var(--void-black);
+}
+
+/* ── Custom scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--void-black); }
+::-webkit-scrollbar-thumb {
+  background: var(--toxic-green);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--toxic-green);
+}
+
+/* ── Typography classes ──────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+.font-body    { font-family: var(--font-body); }
+
+/* ── Scanline overlay (pure CSS) ─────────────────────────────────── */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 136, 0.015) 2px,
+    rgba(0, 255, 136, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+  animation: scanline-drift 8s linear infinite;
+}
+@keyframes scanline-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 40px; }
+}
+
+/* ── Holographic card ────────────────────────────────────────────── */
+.holo-card {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 255, 136, 0.06) 0%,
+    rgba(139, 0, 255, 0.04) 50%,
+    rgba(255, 0, 255, 0.06) 100%
+  );
+  border: 1px solid var(--border-glow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.08),
+    inset 0 0 20px rgba(0, 255, 136, 0.03);
+  border-radius: 12px;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.holo-card:hover {
+  border-color: rgba(0, 255, 136, 0.6);
+  box-shadow:
+    0 0 40px rgba(0, 255, 136, 0.15),
+    inset 0 0 20px rgba(0, 255, 136, 0.06);
+}
+
+/* ── Neon text ───────────────────────────────────────────────────── */
+.neon-green {
+  color: var(--toxic-green);
+  text-shadow:
+    0 0 7px var(--toxic-green),
+    0 0 20px var(--toxic-green),
+    0 0 40px rgba(0, 255, 136, 0.5);
+}
+.neon-magenta {
+  color: var(--magenta);
+  text-shadow:
+    0 0 7px var(--magenta),
+    0 0 20px var(--magenta),
+    0 0 40px rgba(255, 0, 255, 0.5);
+}
+.neon-purple {
+  color: var(--purple);
+  text-shadow:
+    0 0 7px var(--purple),
+    0 0 20px var(--purple);
+}
+
+/* ── Glowing button ──────────────────────────────────────────────── */
+.btn-rip {
+  position: relative;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  color: #030308;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 1rem 2.5rem;
+  overflow: hidden;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.5),
+    0 0 60px rgba(0, 255, 136, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+.btn-rip:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.8),
+    0 0 80px rgba(0, 255, 136, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.15);
+}
+.btn-rip:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+.btn-rip::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255,255,255,0.15) 50%,
+    transparent 60%
+  );
+  transform: rotate(45deg) translateX(-100%);
+  transition: transform 0.6s ease;
+}
+.btn-rip:hover::before {
+  transform: rotate(45deg) translateX(100%);
+}
+
+/* ── Grid background ─────────────────────────────────────────────── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(0, 255, 136, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Holographic border animation ────────────────────────────────── */
+@keyframes holo-rotate {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.holo-border {
+  background: linear-gradient(
+    90deg,
+    var(--toxic-green),
+    var(--purple),
+    var(--magenta),
+    var(--sulfur-yellow),
+    var(--toxic-green)
+  );
+  background-size: 300% 300%;
+  animation: holo-rotate 3s ease infinite;
+}
+
+/* ── Pulse animations ────────────────────────────────────────────── */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+  50%       { box-shadow: 0 0 40px rgba(0, 255, 136, 0.8), 0 0 80px rgba(0, 255, 136, 0.3); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes gas-drift {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  50%  { transform: translate(20px, -30px) scale(1.2); opacity: 0.8; }
+  100% { transform: translate(-10px, -60px) scale(0.8); opacity: 0; }
+}
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%       { transform: translate(-3px, -2px) rotate(-0.5deg); }
+  20%       { transform: translate(3px, 2px) rotate(0.5deg); }
+  30%       { transform: translate(-3px, 3px) rotate(0deg); }
+  40%       { transform: translate(3px, -3px) rotate(0.5deg); }
+  50%       { transform: translate(-2px, 2px) rotate(-0.5deg); }
+  60%       { transform: translate(3px, 1px) rotate(0deg); }
+  70%       { transform: translate(-2px, -2px) rotate(-0.5deg); }
+  80%       { transform: translate(2px, 2px) rotate(0.5deg); }
+  90%       { transform: translate(-1px, -1px) rotate(0deg); }
+}
+.screen-shake {
+  animation: screen-shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* ── Ticker marquee ──────────────────────────────────────────────── */
+@keyframes marquee {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+.ticker-item {
+  animation: marquee linear infinite;
+  white-space: nowrap;
+}
+
+/* ── Stink score meter ───────────────────────────────────────────── */
+.stink-meter {
+  background: linear-gradient(
+    90deg,
+    #00ff88 0%,
+    #ffff00 40%,
+    #ff8800 70%,
+    #ff0044 100%
+  );
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Battle mode ─────────────────────────────────────────────────── */
+.battle-vs {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--toxic-green), var(--magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
+}
+
+/* ── Utility helpers ─────────────────────────────────────────────── */
+.glassmorphism {
+  background: rgba(3, 3, 8, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
