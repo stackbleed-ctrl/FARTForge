@@ -17,11 +17,15 @@ interface PriceData {
 }
 
 const TIER_CONFIG = [
-  { label: 'NO WALLET', icon: null,  color: 'text-white/30',   bg: 'bg-white/5',        border: 'border-white/10'  },
-  { label: '10K STINKER',icon: Zap,  color: 'text-[#00ff88]',  bg: 'bg-[#00ff8815]',    border: 'border-[#00ff8840]' },
+  { label: 'NO WALLET', icon: null, color: 'text-white/30', bg: 'bg-white/5', border: 'border-white/10' },
+  { label: '10K STINKER', icon: Zap, color: 'text-[#00ff88]', bg: 'bg-[#00ff8815]', border: 'border-[#00ff8840]' },
   { label: 'INDOLE OVERLORD', icon: Crown, color: 'text-[#ff00ff]', bg: 'bg-[#ff00ff15]', border: 'border-[#ff00ff40]' },
-  { label: 'NUCLEAR ENTITY', icon: Skull, color: 'text-[#ff4444]',  bg: 'bg-[#ff444415]', border: 'border-[#ff444440]' },
+  { label: 'NUCLEAR ENTITY', icon: Skull, color: 'text-[#ff4444]', bg: 'bg-[#ff444415]', border: 'border-[#ff444440]' },
 ]
+
+const MINT_ADDRESS = '5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump'
+const PUMP_FUN_URL = `https://pump.fun/coin/${MINT_ADDRESS}`
+const BIRDEYE_URL = `https://birdeye.so/token/${MINT_ADDRESS}`
 
 export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: Props) {
   const [priceData, setPriceData] = useState<PriceData | null>(null)
@@ -68,7 +72,6 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
         {/* ── Logo ─────────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="relative flex-shrink-0">
-            {/* Mascot from banner — the little butt-jet robot */}
             <img
               src="/fartforge-banner.jpg"
               alt="FartForge mascot"
@@ -89,9 +92,9 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
 
         {/* ── $FARTFORGE Price Ticker ────────────────────────────────────── */}
         <div className="hidden sm:flex items-center gap-3 flex-1 justify-center">
-          <div className="holo-card px-4 py-1.5 flex items-center gap-3">
+          <a href={BIRDEYE_URL} target="_blank" rel="noopener noreferrer"
+            className="holo-card px-4 py-1.5 flex items-center gap-3 hover:border-[#00ff8860] transition-colors">
             <span className="font-mono text-[10px] text-white/40">$FARTFORGE</span>
-
             <motion.span
               className={`font-display font-bold text-sm ${
                 priceFlash === 'up' ? 'text-[#00ff88]' :
@@ -104,7 +107,6 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
             >
               {priceData ? `$${priceData.price.toFixed(4)}` : '---'}
             </motion.span>
-
             {priceData && (
               <span className={`font-mono text-[10px] ${
                 priceData.change24h >= 0 ? 'text-[#00ff88]' : 'text-red-400'
@@ -113,16 +115,14 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
                 {Math.abs(priceData.change24h).toFixed(2)}%
               </span>
             )}
-
             {priceData && (
               <span className="font-mono text-[10px] text-white/30">
                 MCap ${(priceData.marketCap / 1_000_000).toFixed(0)}M
               </span>
             )}
-
             {/* Live dot */}
             <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
-          </div>
+          </a>
         </div>
 
         {/* ── Right controls ────────────────────────────────────────── */}
@@ -173,14 +173,23 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
                       </button>
                     )
                   })}
-
                   <div className="border-t border-white/5 mt-2 pt-2">
-                    <button className="w-full flex items-center gap-2 px-2 py-2 rounded font-mono text-[11px] text-[#00ff88] hover:bg-[#00ff8810] transition-colors">
-                      🔗 Connect Phantom
-                    </button>
-                    <button className="w-full flex items-center gap-2 px-2 py-2 rounded font-mono text-[11px] text-white/40 hover:bg-white/5 transition-colors">
-                      🌊 Connect Solflare
-                    </button>
+                    <a
+                      href={PUMP_FUN_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded font-mono text-[11px] text-[#00ff88] hover:bg-[#00ff8810] transition-colors"
+                    >
+                      🔗 Buy on pump.fun
+                    </a>
+                    <a
+                      href={BIRDEYE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded font-mono text-[11px] text-white/40 hover:bg-white/5 transition-colors"
+                    >
+                      🦅 View on Birdeye
+                    </a>
                   </div>
                 </motion.div>
               )}

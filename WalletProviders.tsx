@@ -9,6 +9,9 @@ import '@solana/wallet-adapter-react-ui/styles.css'
 
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC ?? clusterApiUrl('mainnet-beta')
 
+// $FARTFORGE token mint address
+export const FART_TOKEN_MINT = process.env.NEXT_PUBLIC_FART_TOKEN_MINT ?? '5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump'
+
 export function WalletProviders({ children }: { children: React.ReactNode }) {
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
