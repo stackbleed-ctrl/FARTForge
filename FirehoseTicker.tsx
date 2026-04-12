@@ -13,10 +13,10 @@ interface Tweet {
 
 // Fallback mock data for when X API is unavailable
 const MOCK_MENTIONS: Tweet[] = [
-  { id: '1', text: '$FART just obliterated my portfolio in the best possible way 💨🚀', username: 'defi_degen', timestamp: '2m ago' },
+  { id: '1', text: '$FARTFORGE just obliterated my portfolio in the best possible way 💨🚀', username: 'defi_degen', timestamp: '2m ago' },
   { id: '2', text: 'fartforge ai agent just scored 9.8/10 stink score on its first emission 🧪', username: 'ai_researcher', timestamp: '5m ago' },
   { id: '3', text: 'the smelliest agent just won battle mode with a 3x nuclear rip 💥', username: 'agentic_riper', timestamp: '8m ago' },
-  { id: '4', text: '$FART holders getting that 3x multiplier rn while you stay poor 💸', username: 'sol_maxi', timestamp: '11m ago' },
+  { id: '4', text: '$FARTFORGE holders getting that 3x multiplier rn while you stay poor 💸', username: 'sol_maxi', timestamp: '11m ago' },
   { id: '5', text: 'fartforge leaderboard dominated by indole overlords tonight', username: 'stink_data', timestamp: '15m ago' },
   { id: '6', text: 'the science behind fartforge is actually legit — real H2S measurements', username: 'biochem_degen', timestamp: '18m ago' },
   { id: '7', text: 'shook my phone so hard for shake-to-fart i dropped it. 9.6 stink. worth it', username: 'mobile_ripper', timestamp: '22m ago' },

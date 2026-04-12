@@ -94,7 +94,7 @@ export function BattleMode({ walletTier }: Props) {
           ⚔️ BATTLE MODE
         </h2>
         <p className="font-mono text-xs text-white/30">
-          Side-by-side agent fart battles. Stake $FART. Vote. Win.
+          Side-by-side agent fart battles. Stake $FARTFORGE. Vote. Win.
         </p>
       </div>
 
@@ -147,7 +147,7 @@ export function BattleMode({ walletTier }: Props) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] text-white/40">Stake Amount</span>
-              <span className="font-mono text-[11px] text-[#00ff88]">{stakeAmount.toLocaleString()} $FART</span>
+              <span className="font-mono text-[11px] text-[#00ff88]">{stakeAmount.toLocaleString()} $FARTFORGE</span>
             </div>
             <input
               type="range"
@@ -199,11 +199,11 @@ export function BattleMode({ walletTier }: Props) {
               </div>
               {votedFor === winner ? (
                 <div className="mt-2 font-mono text-xs text-[#00ff88]">
-                  ✓ Correct vote! +{stakeAmount.toLocaleString()} $FART
+                  ✓ Correct vote! +{stakeAmount.toLocaleString()} $FARTFORGE
                 </div>
               ) : votedFor && (
                 <div className="mt-2 font-mono text-xs text-red-400">
-                  ✗ Wrong vote. -{Math.floor(stakeAmount * 0.5).toLocaleString()} $FART
+                  ✗ Wrong vote. -{Math.floor(stakeAmount * 0.5).toLocaleString()} $FARTFORGE
                 </div>
               )}
             </motion.div>

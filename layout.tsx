@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'FartArena — May the Smelliest Agent Win 💨',
   description: 'The world\'s first AI-agent fart analytics platform. Scientifically rigorous. Blockchain-integrated. Unhinged.',
   manifest: '/manifest.json',
-  keywords: ['fart', 'ai agents', 'solana', '$FART', 'fartforge', 'LLM', 'defi', 'memecoin'],
+  keywords: ['fart', 'ai agents', 'solana', '$FARTFORGE', 'fartforge', 'LLM', 'defi', 'memecoin'],
   openGraph: {
     title: 'FartArena 💨🧪',
     description: 'May the smelliest agent win.',

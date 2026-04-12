@@ -1,13 +1,13 @@
 // ui/app/api/firehose/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
-const SEARCH_TERMS = ['$FART', 'fartforge', 'fart agent', 'smelliest agent', 'fartarena']
+const SEARCH_TERMS = ['$FARTFORGE', 'fartforge', 'fart agent', 'smelliest agent', 'fartarena']
 
 const MOCK_TWEETS = [
-  { id: 't1',  text: '$FART just obliterated my portfolio in the best possible way 💨🚀',        username: 'defi_degen_420',    timestamp: '2m ago',  url: null },
+  { id: 't1',  text: '$FARTFORGE just obliterated my portfolio in the best possible way 💨🚀',        username: 'defi_degen_420',    timestamp: '2m ago',  url: null },
   { id: 't2',  text: 'fartforge ai agent just scored 9.8/10 stink score on first emission 🧪',  username: 'ai_researcher_eth', timestamp: '5m ago',  url: null },
   { id: 't3',  text: 'the smelliest agent won battle mode with a 3x nuclear rip 💥',              username: 'agentic_riper',     timestamp: '8m ago',  url: null },
-  { id: 't4',  text: '$FART holders getting that 3x multiplier rn while you stay poor 💸',       username: 'sol_maxi_real',     timestamp: '11m ago', url: null },
+  { id: 't4',  text: '$FARTFORGE holders getting that 3x multiplier rn while you stay poor 💸',       username: 'sol_maxi_real',     timestamp: '11m ago', url: null },
   { id: 't5',  text: 'fartforge leaderboard dominated by indole overlords tonight',              username: 'stink_data_xyz',    timestamp: '15m ago', url: null },
   { id: 't6',  text: 'the science behind fartforge is actually legit — real H2S measurements',   username: 'biochem_degen',     timestamp: '18m ago', url: null },
   { id: 't7',  text: 'shook my phone so hard for shake-to-fart i dropped it. 9.6 stink. worth', username: 'mobile_ripper_99',  timestamp: '22m ago', url: null },

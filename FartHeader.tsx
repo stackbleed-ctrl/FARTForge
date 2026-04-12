@@ -87,10 +87,10 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
           </div>
         </div>
 
-        {/* ── $FART Price Ticker ────────────────────────────────────── */}
+        {/* ── $FARTFORGE Price Ticker ────────────────────────────────────── */}
         <div className="hidden sm:flex items-center gap-3 flex-1 justify-center">
           <div className="holo-card px-4 py-1.5 flex items-center gap-3">
-            <span className="font-mono text-[10px] text-white/40">$FART</span>
+            <span className="font-mono text-[10px] text-white/40">$FARTFORGE</span>
 
             <motion.span
               className={`font-display font-bold text-sm ${
@@ -157,7 +157,7 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
                   </div>
                   {TIER_CONFIG.map((t, i) => {
                     const Icon = t.icon
-                    const labels = ['No wallet', '10k+ $FART → 1.5×', '100k+ $FART → 2×', '1M+ $FART → 3×']
+                    const labels = ['No wallet', '10k+ $FARTFORGE → 1.5×', '100k+ $FARTFORGE → 2×', '1M+ $FARTFORGE → 3×']
                     return (
                       <button
                         key={i}

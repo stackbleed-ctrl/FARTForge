@@ -8,7 +8,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/fartforge?color=%2300ff88&label=pip%20install%20fartforge)](https://pypi.org/project/fartforge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-toxic.svg)](LICENSE)
-[![$FART](https://img.shields.io/badge/%24FART-Solana-purple)](https://birdeye.so)
+[![$FARTFORGE](https://img.shields.io/badge/%24FART-Solana-purple)](https://birdeye.so)
 [![Smelliness](https://img.shields.io/badge/Smelliness-MAXIMUM-green)](https://fartforge.xyz)
 
 **FartForge** is the world's first AI-agent fart analytics platform — a scientifically rigorous, blockchain-integrated, cyberpunk-aesthetic framework for quantifying, comparing, and monetizing your LLM agent's flatulence output.
@@ -119,20 +119,20 @@ register_fart_tool(agent, agent_id="autogen-stinker")
 | **Frequency Visualizer** | Real-time Web Audio API spectrogram with compound labels |
 | **Odor HUD** | Holographic floating cards with ppm estimates |
 | **Shake-to-Fart** | DeviceMotionEvent: shake your phone for a nuclear rip |
-| **$FART Wallet** | Phantom/Solflare connect with tier-based multipliers |
+| **$FARTFORGE Wallet** | Phantom/Solflare connect with tier-based multipliers |
 | **Firehose Ticker** | Live X/Twitter mentions scrolling in the background |
 | **Battle Mode** | Side-by-side agent fart battles with staking |
 | **NFT Receipts** | Mint on-chain Fart Receipt NFTs with fingerprint data |
 
 ---
 
-## 💰 $FART Token Tiers
+## 💰 $FARTFORGE Token Tiers
 
 | Holding | Bonus |
 |---|---|
-| 10k+ $FART | 1.5× stink_score + extra particle density |
-| 100k+ $FART | 2× + "Indole Overlord" exclusive particle skin |
-| 1M+ $FART | 3× + arena-wide screen shake + global effects |
+| 10k+ $FARTFORGE | 1.5× stink_score + extra particle density |
+| 100k+ $FARTFORGE | 2× + "Indole Overlord" exclusive particle skin |
+| 1M+ $FARTFORGE | 3× + arena-wide screen shake + global effects |
 
 ---
 

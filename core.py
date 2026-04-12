@@ -144,7 +144,7 @@ class FartEmitter:
         self,
         intensity: IntensityLevel = "moderate",
         context: str = "unspecified",
-        stink_multiplier: float = 1.0,  # $FART holder boost applied here
+        stink_multiplier: float = 1.0,  # $FARTFORGE holder boost applied here
     ) -> EmitResult:
         """
         Emit a fart event. This is the main entry point.
