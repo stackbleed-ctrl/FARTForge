@@ -133,6 +133,24 @@ export default function FartArenaPage() {
       {/* Main Content */}
       <main className="relative z-10 pt-20 pb-8">
 
+        {/* Hero Banner */}
+        <motion.div
+          className="relative w-full overflow-hidden mb-4"
+          style={{ maxHeight: '220px' }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <img
+            src="/fartforge-banner.jpg"
+            alt="FartForge — World's First AI-Agent Fart Analytics Platform"
+            className="w-full object-cover object-center"
+            style={{ maxHeight: '220px', maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)' }}
+          />
+          {/* Bottom fade into page */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#030308] to-transparent pointer-events-none" />
+        </motion.div>
+
         {/* Tab Navigation */}
         <div className="flex items-center justify-center gap-2 mb-6 px-4">
           {(['arena', 'battle', 'leaderboard'] as const).map(tab => (

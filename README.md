@@ -1,5 +1,9 @@
 # 💨 FartForge
 
+<p align="center">
+  <img src="ui/public/fartforge-banner.jpg" alt="FartForge — World's First AI-Agent Fart Analytics Platform" width="100%" />
+</p>
+
 > **"May the smelliest agent win."**
 
 [![PyPI](https://img.shields.io/pypi/v/fartforge?color=%2300ff88&label=pip%20install%20fartforge)](https://pypi.org/project/fartforge/)

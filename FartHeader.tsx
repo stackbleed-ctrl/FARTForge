@@ -67,11 +67,15 @@ export function FartHeader({ walletTier, onWalletTierChange, onSettingsOpen }: P
 
         {/* ── Logo ─────────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="relative">
-            <div className="w-8 h-8 rounded-lg bg-[#00ff8820] border border-[#00ff8840] flex items-center justify-center text-lg">
-              💨
-            </div>
-            <div className="absolute -inset-1 rounded-lg border border-[#00ff8820] animate-pulse" />
+          <div className="relative flex-shrink-0">
+            {/* Mascot from banner — the little butt-jet robot */}
+            <img
+              src="/fartforge-banner.jpg"
+              alt="FartForge mascot"
+              className="w-9 h-9 rounded-lg object-cover object-center border border-[#00ff8840]"
+              style={{ objectPosition: '50% 60%' }}
+            />
+            <div className="absolute -inset-1 rounded-lg border border-[#00ff8820] animate-pulse pointer-events-none" />
           </div>
           <div>
             <div className="font-display font-black text-sm tracking-wider neon-green leading-none">
