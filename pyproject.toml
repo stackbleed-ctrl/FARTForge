@@ -1,85 +1,64 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "fartforge"
-version = "2.0.0"
-description = "World's first AI-agent & human fart analytics platform with Fart-On-Chain (FOC) NFT minting"
-readme = "README.md"
-license = { text = "MIT" }
-requires-python = ">=3.10"
-keywords = ["fart", "ai", "agents", "solana", "nft", "arweave", "librosa", "meme"]
-classifiers = [
+name            = "fartforge"
+version         = "2.0.0"
+description     = "Universal agent evaluation, observability, and replay platform"
+readme          = "README.md"
+requires-python = ">=3.11"
+license         = { text = "MIT" }
+authors         = [{ name = "StackBleed", github = "stackbleed-ctrl" }]
+keywords        = ["agent", "evaluation", "observability", "ai", "llm", "solana"]
+classifiers     = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-# Core deps — required for FartEmitter (AI agent mode)
-dependencies = [
-    "numpy>=1.24",
-    "requests>=2.28",
-]
+# Core — zero required deps
+dependencies = []
 
 [project.optional-dependencies]
-
-# Human Anal-yzer™ — real DSP analysis of recorded audio
-human = [
-    "librosa>=0.10",
-    "soundfile>=0.12",
-    "fastapi>=0.110",
-    "uvicorn[standard]>=0.27",
-    "python-multipart>=0.0.9",
+api = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "pydantic>=2.6",
 ]
-
-# FOC — Fart On Chain (Arweave + Solana cNFT minting)
-foc = [
+solana = [
+    "solders>=0.20",
     "solana>=0.34",
-    "solders>=0.21",
-    "anchorpy>=0.20",
-    "requests>=2.28",
-    # Irys/Bundlr upload handled via HTTP (no extra dep needed)
 ]
-
-# Leaderboard backends
-supabase = [
-    "supabase>=2.0",
+metrics = [
+    "prometheus_client>=0.20",
 ]
-
-# Agent integrations
-crewai = [
-    "crewai>=0.28",
+crypto = [
+    "cryptography>=42",
 ]
-langchain = [
-    "langchain>=0.2",
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "fartforge[api,crypto]",
 ]
-
-# Full install — everything
 all = [
-    "fartforge[human,foc,supabase]",
-    "librosa>=0.10",
-    "soundfile>=0.12",
-    "fastapi>=0.110",
-    "uvicorn[standard]>=0.27",
-    "python-multipart>=0.0.9",
-    "solana>=0.34",
-    "solders>=0.21",
-    "anchorpy>=0.20",
-    "supabase>=2.0",
+    "fartforge[api,solana,metrics,crypto]",
 ]
-
-[project.scripts]
-fartforge-server = "fartforge.server:app"
 
 [project.urls]
-Homepage   = "https://fartforge.xyz"
-Repository = "https://github.com/stackbleed-ctrl/FARTForge"
-"pump.fun" = "https://pump.fun/coin/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump"
-Birdeye    = "https://birdeye.so/token/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump"
+Homepage      = "https://github.com/stackbleed-ctrl/FARTForge"
+Documentation = "https://github.com/stackbleed-ctrl/FARTForge#readme"
+"Bug Tracker" = "https://github.com/stackbleed-ctrl/FARTForge/issues"
 
-[tool.hatch.build.targets.wheel]
-packages = ["fartforge"]
+[tool.pytest.ini_options]
+testpaths   = ["tests"]
+addopts     = "-v --tb=short"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fartforge*"]

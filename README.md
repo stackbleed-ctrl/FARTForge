@@ -1,175 +1,290 @@
-# 💨 FartForge v2.0
+# FARTForge
 
-> **"May the smelliest agent win."**
-
-The world's first AI-agent fart analytics platform — scientifically rigorous odor fingerprinting, Solana $FARTFORGE integration, and a cyberpunk 3D arena.
+**Universal agent evaluation, observability, and replay platform.**  
+Built for the serious builder. Tokenized by `$FARTFORGE` on Solana.
 
 ---
 
-## 📁 Monorepo Structure
+## What is FARTForge?
+
+Most systems log events. Some score them. FARTForge does all of this:
+
+| Feature | Description |
+|---|---|
+| **Standardize** | Every agent interaction collapses into a canonical, versioned `Event` |
+| **Score** | Multi-dimensional `ScoreBreakdown` with enforced weight integrity |
+| **Verify** | SHA-256 hash + HMAC/Ed25519 signature per event — tamper-evident by design |
+| **Store** | SQLite with WAL mode, migrations, and trace correlation |
+| **Replay** | Re-run any stored event through a new scorer without touching the original |
+| **Observe** | Metrics, leaderboard, firehose, alerts — all as pluggable hooks |
+| **Anchor** | Write event hashes to Solana as Memo transactions — public, immutable proof |
+| **Gate** | `$FARTFORGE` SPL token balance gates API tiers |
+
+---
+
+## Architecture
 
 ```
-FARTForge/
-├── fartforge/                  # Python package (pip install fartforge)
-│   ├── __init__.py
-│   ├── core.py                 # FartEmitter main class
-│   ├── fingerprint.py          # librosa audio fingerprinting
-│   ├── odor_profiles.py        # real fart chemistry mappings
-│   ├── leaderboard.py          # SQLite + Supabase sync
-│   ├── synth.py                # procedural fart audio synthesis
-│   └── integrations/
-│       ├── crewai_tool.py
-│       ├── langchain_tool.py
-│       └── autogen_tool.py
-├── ui/                         # Next.js 15 FartArena frontend
-│   ├── app/
-│   │   ├── page.tsx            # Main arena page
-│   │   ├── layout.tsx
-│   │   ├── globals.css
-│   │   └── api/
-│   │       ├── fart/route.ts       # POST /api/fart
-│   │       ├── leaderboard/route.ts # GET /api/leaderboard
-│   │       ├── firehose/route.ts   # GET /api/firehose
-│   │       └── price/route.ts      # GET /api/price
-│   ├── components/
-│   │   ├── FartArena3D.tsx     # Three.js 3D particle scene
-│   │   ├── OdorHUD.tsx         # Holographic compound cards
-│   │   ├── WaveformViz.tsx     # Canvas frequency visualizer
-│   │   ├── Leaderboard.tsx     # Live rankings
-│   │   ├── BattleMode.tsx      # Agent vs agent battles
-│   │   ├── AgentChat.tsx       # Chat → emission triggers
-│   │   ├── FartHeader.tsx      # Nav + price ticker
-│   │   ├── FartSettings.tsx    # Settings modal
-│   │   ├── ShakeToFart.tsx     # Mobile accelerometer
-│   │   └── FirehoseTicker.tsx  # X/Twitter mention marquee
-│   ├── lib/
-│   │   └── types.ts            # All TypeScript types
-│   ├── public/
-│   │   └── fartforge-banner.jpg
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── next.config.js
-│   ├── tailwind.config.ts
-│   └── postcss.config.js
-├── supabase/
-│   └── schema.sql              # Supabase schema v2
-├── examples/
-│   ├── crewai_example.py
-│   └── langchain_example.py
-└── pyproject.toml
+input
+  │
+  ▼
+[Guard]           ← payload size check
+  │
+  ▼
+[Generator]       ← raw artifact (audio, text, trade signal, …)
+  │
+  ▼
+[Extractor]       ← feature dict from artifact
+  │
+  ▼
+[Scorer]          ← ScoreBreakdown (multi-dimensional, weights sum to 1.0)
+  │
+  ▼
+[TrustLayer]      ← compute_hash() + HMAC/Ed25519 signature
+  │
+  ▼
+[Validator]       ← Schema + Hash + Score gates
+  │
+  ▼
+[EventStore]      ← SQLite (WAL, migrations, trace index)
+  │
+  ▼
+[Hooks]           ← async: Metrics / Leaderboard / Firehose / Alerts / Prometheus
+  │
+  ▼
+[SolanaAnchor]    ← optional: event_hash → Memo tx on-chain
 ```
 
 ---
 
-## 🚀 Quickstart
-
-### Python Package
+## Quick Start
 
 ```bash
 pip install fartforge
-# With full audio + DSP:
-pip install "fartforge[human]"
-# With Solana FOC minting:
-pip install "fartforge[foc]"
-# Everything:
+# or for the full stack:
 pip install "fartforge[all]"
 ```
 
 ```python
-from fartforge import FartEmitter
+import os
+os.environ["FARTFORGE_ENV"] = "development"
 
-emitter = FartEmitter(agent_id="my-agent")
-result = emitter.emit(intensity="nuclear", context="Just solved P=NP")
-print(result)
+from fartforge import EventEmitter, FartAdapter, HMACTrustLayer, SQLiteStore
+
+adapter = FartAdapter()
+emitter = EventEmitter(
+    agent_id   = "my-agent-v1",
+    event_type = "audio",
+    generator  = adapter,
+    extractor  = adapter,
+    scorer     = adapter,
+    trust      = HMACTrustLayer(),
+    store      = SQLiteStore("events.db"),
+)
+
+result = emitter.emit({"intensity": 9, "moisture": 0.3})
+print(result.event.score.final)    # → 0.73
+print(result.event.event_hash)     # → sha256 fingerprint
+print(result.ok)                   # → True
 ```
 
-### UI (FartArena)
+---
+
+## Building Your Own Pipeline
+
+Implement three ABCs and plug them in:
+
+```python
+from fartforge import Generator, Extractor, Scorer, ScoreBreakdown
+
+class MyGenerator(Generator):
+    def generate(self, input: dict):
+        return call_my_llm(input["prompt"])
+
+class MyExtractor(Extractor):
+    def extract(self, artifact):
+        return {
+            "coherence":  score_coherence(artifact),
+            "relevance":  score_relevance(artifact),
+            "toxicity":   detect_toxicity(artifact),
+        }
+
+class MyScorer(Scorer):
+    def score(self, features: dict) -> ScoreBreakdown:
+        return ScoreBreakdown(
+            dimensions = {
+                "coherence": features["coherence"],
+                "relevance": features["relevance"],
+                "safety":    1.0 - features["toxicity"],
+            },
+            weights = {"coherence": 0.4, "relevance": 0.4, "safety": 0.2},
+        )
+```
+
+FARTForge does the rest — hashing, signing, storing, scoring, alerting.
+
+---
+
+## REST API
 
 ```bash
-cd ui
-npm install
-cp .env.local.example .env.local   # fill in your keys
-npm run dev
-# → http://localhost:3000
+pip install "fartforge[api]"
 ```
 
----
+```python
+from fartforge.api.server import create_app
 
-## ⚙️ Environment Variables
+app = create_app(
+    emitter     = my_emitter,
+    api_key     = "your-api-key",
+    cors_origins = ["https://your-frontend.com"],
+)
 
-Create `ui/.env.local`:
-
-```env
-# Supabase (required for persistent leaderboard)
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-
-# Solana
-NEXT_PUBLIC_SOLANA_RPC=https://api.mainnet-beta.solana.com
-NEXT_PUBLIC_FART_TOKEN_MINT=your_token_mint_address
-
-# Price feeds
-BIRDEYE_API_KEY=your_birdeye_key
-
-# Firehose
-TWITTER_BEARER_TOKEN=your_bearer_token
-
-# Optional: Python backend for real audio generation
-# If set, /api/fart proxies here instead of using JS demo mode
-FARTFORGE_PYTHON_API=http://localhost:8000
+# uvicorn fartforge.api.server:app --reload
 ```
 
-### Running the Python FastAPI backend (for real audio)
+### Endpoints
 
-```bash
-pip install "fartforge[human]"
-fartforge-server
-# → http://localhost:8000
-```
-
----
-
-## 🗃️ Supabase Setup
-
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to SQL Editor → New Query
-3. Paste and run `supabase/schema.sql`
-4. Copy your project URL and anon key to `.env.local`
-
----
-
-## 💰 $FARTFORGE Token Tiers
-
-| Holding | Multiplier | Perks |
+| Method | Path | Description |
 |---|---|---|
-| 0 | 1× | Standard emissions |
-| 10k+ | 1.5× | Stink score boost |
-| 100k+ | 2× | + Indole Overlord particle skin |
-| 1M+ | 3× | + Nuclear screen shake + global effects |
+| `POST` | `/events` | Submit an event |
+| `GET` | `/events/{id}` | Get full event breakdown |
+| `GET` | `/events` | List events (paginated, filterable by agent/type/trace) |
+| `POST` | `/events/{id}/verify` | Integrity check |
+| `GET` | `/trace/{trace_id}` | All events in a trace |
+| `GET` | `/leaderboard` | Top events by score |
+| `GET` | `/agents/{id}/stats` | Per-agent aggregate stats |
+| `GET` | `/metrics` | Live MetricsHook snapshot |
+| `GET` | `/health` | Liveness + version + uptime |
 
-Token: [pump.fun](https://pump.fun/coin/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump) · [Birdeye](https://birdeye.so/token/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump)
-
----
-
-## 🔬 The Science
-
-Real human flatulence chemistry:
-
-| Compound | CAS | Typical ppm | Character |
-|---|---|---|---|
-| H₂S | 7783-06-4 | 0.1–10 | Rotten eggs, volcanic |
-| Methanethiol | 74-93-1 | 0.01–3 | Rotten cabbage, swamp |
-| Dimethyl sulfide | 75-18-3 | 0.01–1 | Cooked cabbage, marine |
-| Indole | 120-72-9 | trace | Fecal, paradoxically floral |
-| Skatole | 83-34-1 | trace | Mothballs, barnyard |
-| Methane | 74-82-8 | 100–500 | Odorless but flammable |
-
-*Suarez et al. (1997) Gut · Tangerman (2009) J Chromatography B*
+Rate limiting is on by default: 60 req/60s per IP (configurable via env vars).
 
 ---
 
-## 📜 License
+## Replay Engine
 
-MIT. Fart freely.
+The replay engine is what separates FARTForge from every other eval framework:
 
-*Built with 💨 by FartForge Labs. Real chemistry. Real agents. Real stink.*
+```python
+from fartforge import ReplayEngine, FartAdapter, SQLiteStore
+
+store  = SQLiteStore("events.db")
+engine = ReplayEngine(store=store)
+
+# Re-score a single event with a new scorer
+result = engine.replay("event-uuid", scorer=MyNewScorer())
+print(result.summary())
+
+# Retroactively compare two scorers over your entire history
+comparison = engine.compare_scorers(
+    scorer_a  = OldScorer(),
+    scorer_b  = NewScorer(),
+    agent_id  = "my-agent",
+)
+print(f"New scorer improves {comparison['improved_pct']:.0%} of events")
+print(f"Mean delta: {comparison['mean_delta']:+.4f}")
+```
+
+Original events are **never mutated**. Every replay produces a new event with a fresh ID, inheriting the original trace_id.
+
+---
+
+## Solana Integration
+
+### On-Chain Event Anchoring
+
+```python
+from fartforge.solana.anchor import SolanaAnchor, anchor_event_hook
+
+anchor  = SolanaAnchor()  # reads SOLANA_RPC_URL + SOLANA_PAYER_KEYPAIR
+tx_sig  = anchor.anchor_event(event)
+# event.metadata["solana_tx"] is now set
+
+# As an EmitHook (fire-and-forget, async):
+emitter = EventEmitter(..., hooks=[anchor_event_hook(anchor)])
+
+# Verify later:
+assert anchor.verify_anchor(event)
+```
+
+Each anchor tx costs ~0.000005 SOL. The memo contains:
+```json
+{"ff":"fartforge","h":"sha256hash","a":"agent-id","ts":"2025-01-01T..."}
+```
+
+### $FARTFORGE Token Gating
+
+```python
+from fartforge.solana.token_gate import TokenGate, Tier, tier_required
+
+gate    = TokenGate()
+require = tier_required(gate)
+
+# FastAPI route — requires ≥ 1,000 $FARTFORGE in X-Wallet header
+@app.post("/events/{id}/replay")
+def replay(_=Depends(require("PRO"))):
+    ...
+```
+
+| Tier | $FARTFORGE Required | Features |
+|---|---|---|
+| FREE | 0 | Public leaderboard read |
+| BASIC | 100 | Submit events (rate-limited) |
+| PRO | 1,000 | Full API + higher rate limits |
+| ELITE | 10,000 | Replay engine + Solana anchoring + firehose |
+
+---
+
+## Security Hardening (v2)
+
+| Issue (v1) | Fix (v2) |
+|---|---|
+| Insecure default HMAC secret | Raises `ValueError` in production if `FARTFORGE_SECRET` is unset |
+| No key rotation | `HMACTrustLayer(secret=[new_key, old_key])` — signs with `[0]`, verifies against all |
+| Signature had no versioning | `v1:hex` prefix enables future algorithm rotation |
+| No score weight enforcement | `ScoreBreakdown.__post_init__` raises if weights ≠ 1.0 |
+| No dimension bounds check | `ScoreBreakdown.validate()` rejects values outside `[0, 1]` |
+| SQLite concurrency issues | `threading.Lock` + WAL journal mode |
+| No schema migrations | `_migrations` table, apply-once idempotent |
+| Hook blocking pipeline | `ThreadPoolExecutor` — hooks are async by default |
+| No payload size guard | `max_input_bytes` parameter (default 256 KB) |
+| No rate limiting | Sliding-window per-IP rate limiter (no Redis required) |
+| Wildcard CORS | Restricted origins by default |
+| Replay artifact ambiguity | Explicit `require_artifact` flag + warning |
+| No request tracing | `trace_id` field + `X-Request-ID` header |
+
+---
+
+## Environment Variables
+
+See [`.env.example`](.env.example) for all variables.
+
+Key ones:
+
+```bash
+FARTFORGE_ENV=production          # enables strict secret enforcement
+FARTFORGE_SECRET=your-secret      # required in production
+SOLANA_RPC_URL=https://...        # Solana RPC
+SOLANA_PAYER_KEYPAIR=...          # base58 keypair JSON (for anchoring)
+FARTFORGE_TOKEN_MINT=FART...      # $FARTFORGE SPL token mint
+```
+
+---
+
+## Tests
+
+```bash
+pip install "fartforge[dev]"
+pytest tests/ -v
+```
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+> FARTForge: the only agent eval platform with on-chain integrity proofs and a meme coin.  
+> Built in Sydney, Nova Scotia. Shipped by [`stackbleed-ctrl`](https://github.com/stackbleed-ctrl).

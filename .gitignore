@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+pip-wheel-metadata/
+*.whl
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Environment
+.env
+*.env.local
+
+# FARTForge runtime
+*.db
+*.db-shm
+*.db-wal
+fartforge_events.db
+
+# Solana keypairs — NEVER commit these
+keypair.json
+*.json.bak
+wallet*.json
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Artifacts / data
+artifacts/
+raw_artifacts/
