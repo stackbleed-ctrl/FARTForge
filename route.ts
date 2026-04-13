@@ -1,74 +1,77 @@
-// ui/app/api/firehose/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+// ui/app/api/price/route.ts
+//
+// $FARTFORGE token price endpoint.
+// Uses Next.js route segment config for edge-compatible caching
+// instead of module-level mutable state (which breaks in serverless).
 
-const SEARCH_TERMS = ['$FARTFORGE', 'fartforge', 'fart agent', 'smelliest agent', 'fartarena']
+import { NextResponse } from 'next/server'
 
-const MOCK_TWEETS = [
-  { id: 't1',  text: '$FARTFORGE just obliterated my portfolio in the best possible way 💨🚀',        username: 'defi_degen_420',    timestamp: '2m ago',  url: null },
-  { id: 't2',  text: 'fartforge ai agent just scored 9.8/10 stink score on first emission 🧪',  username: 'ai_researcher_eth', timestamp: '5m ago',  url: null },
-  { id: 't3',  text: 'the smelliest agent won battle mode with a 3x nuclear rip 💥',              username: 'agentic_riper',     timestamp: '8m ago',  url: null },
-  { id: 't4',  text: '$FARTFORGE holders getting that 3x multiplier rn while you stay poor 💸',       username: 'sol_maxi_real',     timestamp: '11m ago', url: null },
-  { id: 't5',  text: 'fartforge leaderboard dominated by indole overlords tonight',              username: 'stink_data_xyz',    timestamp: '15m ago', url: null },
-  { id: 't6',  text: 'the science behind fartforge is actually legit — real H2S measurements',   username: 'biochem_degen',     timestamp: '18m ago', url: null },
-  { id: 't7',  text: 'shook my phone so hard for shake-to-fart i dropped it. 9.6 stink. worth', username: 'mobile_ripper_99',  timestamp: '22m ago', url: null },
-  { id: 't8',  text: 'fart receipt NFT just dropped with 7-compound odor fingerprint on chain', username: 'nft_stinker_sol',   timestamp: '27m ago', url: null },
-  { id: 't9',  text: 'just docked my crewai agent into fartforge. first emit: 8.2 stink score',  username: 'crewai_builder',    timestamp: '33m ago', url: null },
-  { id: 't10', text: 'if your AI agent isnt integrated with fartforge are you even building',    username: 'based_agent_dev',   timestamp: '41m ago', url: null },
-]
+export const revalidate = 15 // seconds — Next.js built-in route cache
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const limit = parseInt(searchParams.get('limit') ?? '20')
+const FART_MINT = process.env.NEXT_PUBLIC_FART_TOKEN_MINT
 
-  // Try X/Twitter API v2 if bearer token configured
-  const bearerToken = process.env.TWITTER_BEARER_TOKEN
-  if (bearerToken) {
-    try {
-      const query = SEARCH_TERMS.map(t => `"${t}"`).join(' OR ')
-      const res = await fetch(
-        `https://api.twitter.com/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=${Math.min(limit, 100)}&tweet.fields=created_at,author_id&expansions=author_id&user.fields=username`,
-        {
-          headers: { Authorization: `Bearer ${bearerToken}` },
-          next: { revalidate: 30 },
-        }
-      )
+async function fetchBirdeye(): Promise<Record<string, number> | null> {
+  const key = process.env.BIRDEYE_API_KEY
+  if (!key || !FART_MINT) return null
+  try {
+    const res = await fetch(
+      `https://public-api.birdeye.so/defi/price?address=${FART_MINT}`,
+      { headers: { 'X-API-KEY': key } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return {
+      price: data.data?.value,
+      change24h: data.data?.priceChange24h,
+      marketCap: data.data?.marketCap,
+    }
+  } catch {
+    return null
+  }
+}
 
-      if (res.ok) {
-        const data = await res.json()
-        const users = Object.fromEntries(
-          (data.includes?.users ?? []).map((u: any) => [u.id, u.username])
-        )
-        const tweets = (data.data ?? []).slice(0, limit).map((t: any) => ({
-          id: t.id,
-          text: t.text,
-          username: users[t.author_id] ?? 'unknown',
-          timestamp: new Date(t.created_at).toLocaleTimeString(),
-          url: `https://twitter.com/i/web/status/${t.id}`,
-        }))
-        return NextResponse.json({ tweets, source: 'twitter' })
-      }
-    } catch { /* fallback to mock */ }
+async function fetchJupiter(): Promise<Record<string, number> | null> {
+  if (!FART_MINT) return null
+  try {
+    const res = await fetch(`https://price.jup.ag/v4/price?ids=${FART_MINT}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const p = data.data?.[FART_MINT]
+    return p ? { price: p.price } : null
+  } catch {
+    return null
+  }
+}
+
+export async function GET() {
+  const now = Date.now()
+
+  // Try real price feeds
+  const birdeye = await fetchBirdeye()
+  if (birdeye?.price) {
+    return NextResponse.json({
+      price: birdeye.price,
+      change24h: birdeye.change24h ?? 0,
+      marketCap: birdeye.marketCap ?? 0,
+      source: 'birdeye',
+    })
   }
 
-  // Try Supabase realtime mentions table
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (supabaseUrl && supabaseKey) {
-    try {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(supabaseUrl, supabaseKey)
-      const { data } = await supabase
-        .from('mentions')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit)
-      if (data && data.length > 0) {
-        return NextResponse.json({ tweets: data, source: 'supabase' })
-      }
-    } catch { /* fallback */ }
+  const jupiter = await fetchJupiter()
+  if (jupiter?.price) {
+    return NextResponse.json({
+      price: jupiter.price,
+      change24h: 0,
+      marketCap: 0,
+      source: 'jupiter',
+    })
   }
 
-  // Return mock data with slight randomization for freshness
-  const shuffled = [...MOCK_TWEETS].sort(() => Math.random() - 0.5).slice(0, limit)
-  return NextResponse.json({ tweets: shuffled, source: 'mock' })
+  // Simulated price with realistic micro-fluctuation for demo
+  const base = 0.185
+  const price = parseFloat((base + Math.sin(now / 30_000) * 0.01 + Math.random() * 0.002).toFixed(5))
+  const change24h = parseFloat((3.5 + Math.sin(now / 120_000) * 3).toFixed(2))
+  const marketCap = Math.floor(185_000_000 + Math.sin(now / 30_000) * 5_000_000)
+
+  return NextResponse.json({ price, change24h, marketCap, source: 'simulated' })
 }

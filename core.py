@@ -2,7 +2,6 @@
 fartforge/core.py
 
 FartEmitter — the main class any LLM agent docks its claws into.
-This is where the smelliest agent wins.
 """
 
 from __future__ import annotations
@@ -11,7 +10,6 @@ import base64
 import json
 import os
 import tempfile
-import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -27,11 +25,11 @@ from fartforge.synth import synthesize_fart
 
 # Intensity → raw audio energy mapping (0.0–1.0)
 INTENSITY_MAP: dict[str, float] = {
-    "silent":   0.05,   # the sneaky one nobody claims
-    "mild":     0.25,   # polite society approved
-    "moderate": 0.55,   # heads turn
-    "intense":  0.80,   # windows crack
-    "nuclear":  1.00,   # air quality alert issued
+    "silent":   0.05,  # the sneaky one nobody claims
+    "mild":     0.25,  # polite society approved
+    "moderate": 0.55,  # heads turn
+    "intense":  0.80,  # windows crack
+    "nuclear":  1.00,  # air quality alert issued
 }
 
 IntensityLevel = Literal["silent", "mild", "moderate", "intense", "nuclear"]
@@ -40,34 +38,35 @@ IntensityLevel = Literal["silent", "mild", "moderate", "intense", "nuclear"]
 @dataclass
 class EmitResult:
     """Complete result of a fart emission event."""
+
     emission_id: str
     agent_id: str
     intensity: str
     context: str
-    stink_score: float               # 0–10, peer-reviewed methodology
-    odor_profile: dict               # compound → {ppm, descriptor}
-    fingerprint: dict                # MFCC, centroid, ZCR, etc.
-    audio_path: Optional[str]        # path to WAV file
-    audio_b64: Optional[str]         # base64 WAV for API transport
+    stink_score: float          # 0–10, peer-reviewed methodology
+    odor_profile: dict          # compound → {ppm, descriptor}
+    fingerprint: dict           # MFCC, centroid, ZCR, etc.
+    audio_path: Optional[str]   # path to WAV file
+    audio_b64: Optional[str]    # base64 WAV for API transport
     timestamp: str
-    rank: Optional[int]              # leaderboard position
-    arena_url: Optional[str]         # deep link to FartArena replay
+    rank: Optional[int]         # leaderboard position
+    arena_url: Optional[str]    # deep link to FartArena replay
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, default=str)
 
-    def __str__(self) -> str:  # noqa: D105
+    def __str__(self) -> str:
         stars = "💨" * max(1, round(self.stink_score))
         return (
-            f"\n{'='*60}\n"
-            f"  FART EMISSION LOGGED — {self.agent_id}\n"
-            f"{'='*60}\n"
-            f"  Intensity:   {self.intensity.upper()}\n"
-            f"  Stink Score: {self.stink_score:.1f}/10  {stars}\n"
-            f"  Context:     {self.context}\n"
-            f"  Rank:        #{self.rank or '?'} on leaderboard\n"
-            f"  Top compound:{self._top_compound()}\n"
-            f"{'='*60}\n"
+            f"\n{'=' * 60}\n"
+            f" FART EMISSION LOGGED — {self.agent_id}\n"
+            f"{'=' * 60}\n"
+            f" Intensity:    {self.intensity.upper()}\n"
+            f" Stink Score:  {self.stink_score:.1f}/10 {stars}\n"
+            f" Context:      {self.context}\n"
+            f" Rank:         #{self.rank or '?'} on leaderboard\n"
+            f" Top compound: {self._top_compound()}\n"
+            f"{'=' * 60}\n"
         )
 
     def _top_compound(self) -> str:
@@ -85,12 +84,6 @@ class FartEmitter:
     can use this class to emit, fingerprint, and record scientifically
     rigorous fart events.
 
-    Usage::
-
-        emitter = FartEmitter(agent_id="my-cool-agent")
-        result = emitter.emit(intensity="nuclear", context="Won a chess tournament")
-        print(result)
-
     Args:
         agent_id: Unique identifier for the agent. Appears on leaderboard.
         db_path: Path for local SQLite leaderboard. Defaults to ~/.fartforge/leaderboard.db
@@ -98,7 +91,7 @@ class FartEmitter:
         supabase_key: Optional Supabase anon key.
         arena_base_url: Base URL of your FartArena deployment.
         play_audio: Whether to play fart sounds on emit (default True).
-        return_audio_b64: Include base64-encoded WAV in result (default False, can be large).
+        return_audio_b64: Include base64-encoded WAV in result (default False).
         verbose: Print emission results to terminal (default True).
     """
 
@@ -119,7 +112,6 @@ class FartEmitter:
         self.return_audio_b64 = return_audio_b64
         self.verbose = verbose
 
-        # Storage
         if db_path is None:
             _default_dir = Path.home() / ".fartforge"
             _default_dir.mkdir(exist_ok=True)
@@ -132,7 +124,6 @@ class FartEmitter:
         )
         self.odor_profiler = OdorProfiler()
 
-        # Temp dir for audio files
         self._audio_dir = Path(tempfile.gettempdir()) / "fartforge"
         self._audio_dir.mkdir(exist_ok=True)
 
@@ -144,7 +135,7 @@ class FartEmitter:
         self,
         intensity: IntensityLevel = "moderate",
         context: str = "unspecified",
-        stink_multiplier: float = 1.0,  # $FARTFORGE holder boost applied here
+        stink_multiplier: float = 1.0,
     ) -> EmitResult:
         """
         Emit a fart event. This is the main entry point.
@@ -163,14 +154,14 @@ class FartEmitter:
         # 1. Synthesize audio
         audio_array, sample_rate = synthesize_fart(
             energy=energy,
-            duration_ms=int(800 + energy * 2400),  # 800ms–3200ms
+            duration_ms=int(800 + energy * 2400),
             seed=hash(emission_id) % (2**31),
         )
 
         # 2. Save to WAV
         audio_path = self._save_audio(emission_id, audio_array, sample_rate)
 
-        # 3. Play it (if enabled) — this is the fun part
+        # 3. Play it (if enabled)
         if self.play_audio:
             self._play_audio(audio_array, sample_rate)
 
@@ -245,25 +236,22 @@ class FartEmitter:
         Peer-reviewed stink_score methodology.
 
         Weighted combination of:
-          - Raw emission energy (40%)
-          - Total sulfur compound ppm (30%)
-          - Spectral complexity (roughness) (20%)
-          - Duration factor (10%)
+          - Raw emission energy           (40%)
+          - Total sulfur compound ppm     (30%)
+          - Spectral complexity (roughness)(20%)
+          - Duration factor               (10%)
         """
-        # Sulfur load: H2S + methanethiol + dimethyl sulfide
         sulfur_ppm = sum(
             odor_profile.get(c, {}).get("ppm", 0)
             for c in ("H2S", "methanethiol", "dimethyl_sulfide")
         )
         sulfur_score = min(10.0, sulfur_ppm * 0.8)
 
-        # Spectral complexity: higher ZCR + lower centroid = more rumbly = worse
         spectral_score = (
             (fingerprint.zero_crossing_rate * 50)
             + (1 - min(1.0, fingerprint.spectral_centroid / 8000)) * 5
         )
 
-        # Duration factor: longer = more sustained suffering
         duration_score = min(10.0, fingerprint.duration_ms / 320)
 
         score = (

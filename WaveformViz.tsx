@@ -1,211 +1,155 @@
 'use client'
 
-import { useEffect, useRef, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { useRef, useEffect, useCallback } from 'react'
 import type { EmitResult } from '@/lib/types'
 
-interface Props {
+interface WaveformVizProps {
   emitResult: EmitResult | null
   isActive: boolean
 }
 
-const COMPOUND_FREQ_LABELS: { hz: number; label: string; color: string }[] = [
-  { hz: 80,   label: 'Sphincter Fund.',  color: '#ffd700' },
-  { hz: 250,  label: 'H₂S',             color: '#ffd700' },
-  { hz: 600,  label: 'CH₃SH',           color: '#90EE90' },
-  { hz: 1200, label: 'DMS',             color: '#87CEEB' },
-  { hz: 3000, label: 'Indole',          color: '#9B59B6' },
-  { hz: 6000, label: 'Skatole',         color: '#8B4513' },
-]
+const COLORS = {
+  low:   '#00ff88',
+  mid:   '#facc15',
+  high:  '#f97316',
+  nuke:  '#ff2244',
+}
 
-export function WaveformViz({ emitResult, isActive }: Props) {
+function stinkColor(score: number) {
+  if (score >= 9) return COLORS.nuke
+  if (score >= 7) return COLORS.high
+  if (score >= 4) return COLORS.mid
+  return COLORS.low
+}
+
+export function WaveformViz({ emitResult, isActive }: WaveformVizProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const phaseRef = useRef(0)
-  const intensityRef = useRef(0)
 
-  // Generate waveform from fingerprint data
-  const mfccs = useMemo(() => emitResult?.fingerprint?.mfcc_mean ?? [], [emitResult])
-  const centroid = emitResult?.fingerprint?.spectral_centroid ?? 800
-  const zcr = emitResult?.fingerprint?.zero_crossing_rate ?? 0.05
-  const stinkScore = emitResult?.stink_score ?? 0
+  const score = emitResult?.stink_score ?? 0
+  const fingerprint = emitResult?.fingerprint
+  const rumble = fingerprint?.rumble_score ?? 0.3
+  const sharpness = fingerprint?.sharpness_score ?? 0.3
+  const wetness = fingerprint?.wetness_score ?? 0.2
+  const mfccs = fingerprint?.mfcc_mean ?? []
 
-  useEffect(() => {
+  const draw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    const draw = () => {
-      const W = canvas.width
-      const H = canvas.height
+    const W = canvas.width
+    const H = canvas.height
+    const cx = H / 2
 
-      // Clear
-      ctx.clearRect(0, 0, W, H)
+    ctx.clearRect(0, 0, W, H)
 
-      // Background
-      ctx.fillStyle = 'rgba(3,3,8,0)'
-      ctx.fillRect(0, 0, W, H)
+    // Background gradient
+    const bg = ctx.createLinearGradient(0, 0, W, 0)
+    bg.addColorStop(0, 'rgba(0,255,136,0.03)')
+    bg.addColorStop(0.5, 'rgba(0,0,0,0)')
+    bg.addColorStop(1, 'rgba(139,0,255,0.03)')
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
 
-      const phase = phaseRef.current
-      const intensity = intensityRef.current
+    // Center line
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(0, cx)
+    ctx.lineTo(W, cx)
+    ctx.stroke()
 
-      if (!emitResult && !isActive) {
-        // Idle flatline with gentle breathing
-        ctx.beginPath()
-        ctx.strokeStyle = 'rgba(0,255,136,0.15)'
-        ctx.lineWidth = 1
-        for (let x = 0; x < W; x++) {
-          const y = H / 2 + Math.sin(x * 0.05 + phase * 0.5) * 2
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-        }
-        ctx.stroke()
+    const color = stinkColor(score)
+    const phase = phaseRef.current
 
-        phaseRef.current += 0.02
-        animRef.current = requestAnimationFrame(draw)
-        return
-      }
+    // Build waveform from fingerprint data
+    const bars = 64
+    const barW = W / bars
 
-      // ── Main waveform ────────────────────────────────────────────
-      // Synthesize a displayable waveform from fingerprint data
-      const nBands = Math.max(mfccs.length, 8)
-      const amplitude = isActive ? 0.35 : 0.22
+    for (let i = 0; i < bars; i++) {
+      const t = i / bars
+      const mfccIdx = Math.floor(t * mfccs.length)
+      const mfccVal = mfccs[mfccIdx] ?? 0
+      const normalizedMfcc = Math.abs(mfccVal) / 40
 
-      // Primary waveform (fundamental + harmonics based on MFCCs)
+      // Composite wave: rumble (low freq) + sharpness (high freq) + wetness (noise)
+      const lowFreq = Math.sin(t * Math.PI * 4 + phase * 0.5) * rumble
+      const highFreq = Math.sin(t * Math.PI * 16 + phase * 3) * sharpness * 0.5
+      const noise = (Math.random() - 0.5) * wetness * 0.3
+      const mfccContrib = Math.sin(t * Math.PI * 8 + phase) * normalizedMfcc * 0.4
+
+      const amplitude = isActive
+        ? (lowFreq + highFreq + noise + mfccContrib) * (cx * 0.7) * (0.3 + score / 10)
+        : Math.sin(t * Math.PI * 2 + phase * 0.2) * cx * 0.08
+
+      const barH = Math.abs(amplitude)
+      const y = cx - barH
+
+      // Gradient fill for each bar
+      const grad = ctx.createLinearGradient(0, y, 0, cx + barH)
+      grad.addColorStop(0, color + 'cc')
+      grad.addColorStop(0.5, color + '88')
+      grad.addColorStop(1, color + '22')
+
+      ctx.fillStyle = grad
+      ctx.fillRect(i * barW + 1, y, barW - 2, barH * 2)
+
+      // Top glow dot
+      ctx.fillStyle = color
       ctx.beginPath()
-      ctx.strokeStyle = `rgba(0,255,136,${isActive ? 0.9 : 0.6})`
-      ctx.lineWidth = isActive ? 2 : 1.5
-      ctx.shadowBlur = isActive ? 12 : 6
-      ctx.shadowColor = '#00ff88'
-
-      for (let x = 0; x < W; x++) {
-        const t = x / W
-        let y = H / 2
-
-        // Sum of harmonic components weighted by MFCC coefficients
-        for (let n = 0; n < Math.min(nBands, 8); n++) {
-          const coeff = mfccs[n] ?? 0
-          const normCoeff = Math.tanh(coeff / 20) // normalize to -1..1
-          const freq = (n + 1) * (1 + zcr * 5)
-          const amp = amplitude * (1 / (n + 1)) * Math.abs(normCoeff)
-          y += Math.sin(2 * Math.PI * freq * t + phase + n * 0.5) * H * amp
-        }
-
-        // Add intensity-driven noise bursts
-        if (isActive) {
-          y += (Math.random() - 0.5) * H * intensity * 0.05
-        }
-
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-      }
-      ctx.stroke()
-      ctx.shadowBlur = 0
-
-      // ── Frequency bars (mini spectrogram) ────────────────────────
-      const barCount = 48
-      const barW = (W / barCount) - 1
-      const maxBarH = H * 0.6
-
-      for (let i = 0; i < barCount; i++) {
-        const t = i / barCount
-        // Shape from fingerprint: centroid drives peak position
-        const peakPos = Math.min(0.9, centroid / 8000)
-        const distFromPeak = Math.abs(t - peakPos)
-        const baseH = Math.exp(-distFromPeak * distFromPeak * 12)
-
-        // Add MFCC texture
-        const mfccIdx = Math.floor(t * mfccs.length)
-        const mfccVal = Math.abs(mfccs[mfccIdx] ?? 0) / 40
-        const barH = (baseH * 0.7 + mfccVal * 0.3) * maxBarH
-
-        // Animate
-        const animH = barH * (0.6 + Math.sin(phase * 3 + i * 0.4) * 0.4) * (isActive ? 1 : 0.4)
-
-        // Color: green → yellow → magenta as freq increases
-        const hue = 150 - t * 270  // 150=green, -120=magenta
-        const sat = 80 + stinkScore * 2
-        const alpha = 0.5 + (isActive ? 0.4 : 0)
-
-        ctx.fillStyle = `hsla(${hue}, ${sat}%, 60%, ${alpha})`
-        ctx.fillRect(
-          i * (barW + 1),
-          H - animH,
-          barW,
-          animH
-        )
-
-        // Bar glow
-        if (isActive && animH > 20) {
-          ctx.fillStyle = `hsla(${hue}, ${sat}%, 80%, 0.15)`
-          ctx.fillRect(i * (barW + 1), H - animH - 3, barW, 3)
-        }
-      }
-
-      // ── Compound frequency labels ─────────────────────────────────
-      COMPOUND_FREQ_LABELS.forEach(({ hz, label, color }) => {
-        const xPos = Math.min(W - 50, (Math.log10(hz) - Math.log10(20)) / (Math.log10(20000) - Math.log10(20)) * W)
-        ctx.beginPath()
-        ctx.strokeStyle = color + '40'
-        ctx.lineWidth = 1
-        ctx.setLineDash([2, 4])
-        ctx.moveTo(xPos, 0)
-        ctx.lineTo(xPos, H - 16)
-        ctx.stroke()
-        ctx.setLineDash([])
-
-        ctx.fillStyle = color + '80'
-        ctx.font = '8px "Share Tech Mono", monospace'
-        ctx.fillText(label, xPos + 2, H - 4)
-      })
-
-      // Advance phase
-      phaseRef.current += isActive ? 0.15 : 0.03
-      if (isActive) intensityRef.current = Math.min(1, intensityRef.current + 0.1)
-      else intensityRef.current = Math.max(0, intensityRef.current - 0.05)
-
-      animRef.current = requestAnimationFrame(draw)
+      ctx.arc(i * barW + barW / 2, y, 1, 0, Math.PI * 2)
+      ctx.fill()
     }
 
+    // MFCC label overlay
+    if (fingerprint && mfccs.length > 0) {
+      ctx.font = '9px Share Tech Mono, monospace'
+      ctx.fillStyle = 'rgba(255,255,255,0.15)'
+      ctx.fillText(`centroid: ${fingerprint.spectral_centroid.toFixed(0)}Hz  zcr: ${fingerprint.zero_crossing_rate.toFixed(3)}  dur: ${fingerprint.duration_ms}ms`, 8, H - 6)
+    }
+
+    phaseRef.current += isActive ? 0.12 : 0.015
+    animRef.current = requestAnimationFrame(draw)
+  }, [isActive, score, rumble, sharpness, wetness, mfccs, fingerprint])
+
+  useEffect(() => {
     animRef.current = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(animRef.current)
-  }, [emitResult, isActive, mfccs, centroid, zcr, stinkScore])
+  }, [draw])
 
-  // Resize canvas to container
+  // Resize observer
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const resize = () => {
+    const ro = new ResizeObserver(() => {
       canvas.width = canvas.offsetWidth * window.devicePixelRatio
       canvas.height = canvas.offsetHeight * window.devicePixelRatio
-      const ctx = canvas.getContext('2d')!
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
-    }
-    resize()
-    const observer = new ResizeObserver(resize)
-    observer.observe(canvas)
-    return () => observer.disconnect()
+      canvas.style.width = `${canvas.offsetWidth}px`
+      canvas.style.height = `${canvas.offsetHeight}px`
+    })
+    ro.observe(canvas)
+    return () => ro.disconnect()
   }, [])
 
   return (
-    <div className="w-full h-full relative">
-      {/* Label */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-1 z-10">
-        <span className="font-mono text-[9px] text-white/25 uppercase tracking-widest">
-          Frequency Spectrogram
+    <div className="relative w-full h-full flex flex-col">
+      <div className="flex items-center justify-between mb-1 px-1">
+        <span className="font-display text-[9px] uppercase tracking-widest text-white/30">
+          Frequency Fingerprint
         </span>
         {isActive && (
-          <motion.span
-            className="font-mono text-[9px] text-[#ff0044]"
-            animate={{ opacity: [1, 0] }}
-            transition={{ repeat: Infinity, duration: 0.6 }}
-          >
-            ● REC
-          </motion.span>
+          <span className="flex items-center gap-1 font-mono text-[9px] text-[#00ff88]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
+            LIVE
+          </span>
         )}
       </div>
-
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
+        className="w-full flex-1 rounded"
         style={{ imageRendering: 'pixelated' }}
       />
     </div>

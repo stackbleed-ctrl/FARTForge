@@ -1,186 +1,184 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import type { EmitResult } from '@/lib/types'
+import type { EmitResult, OdorCompound } from '@/lib/types'
 
-interface Props {
+interface OdorHUDProps {
   emitResult: EmitResult | null
   stinkMultiplier: number
 }
 
-const COMPOUND_ORDER = ['H2S', 'methanethiol', 'dimethyl_sulfide', 'indole', 'skatole']
+const SULFUR_COMPOUNDS = ['H2S', 'methanethiol', 'dimethyl_sulfide']
 
-const COMPOUND_DISPLAY: Record<string, { emoji: string; shortName: string; color: string }> = {
-  H2S:              { emoji: '🥚', shortName: 'H₂S',    color: '#FFD700' },
-  methanethiol:     { emoji: '🥬', shortName: 'CH₃SH',  color: '#90EE90' },
-  dimethyl_sulfide: { emoji: '🌊', shortName: 'DMS',    color: '#87CEEB' },
-  indole:           { emoji: '💜', shortName: 'Indole', color: '#9B59B6' },
-  skatole:          { emoji: '💩', shortName: 'Skatole',color: '#8B4513' },
-}
-
-export function OdorHUD({ emitResult, stinkMultiplier }: Props) {
-  const compounds = emitResult?.odor_profile ?? {}
-  const stinkScore = emitResult?.stink_score ?? 0
-  const hasData = emitResult !== null
+function CompoundCard({ name, compound, index }: { name: string; compound: OdorCompound; index: number }) {
+  const isSulfur = compound.is_sulfur
+  const odorBar = compound.odor_threshold_ppb
+    ? Math.min(100, (compound.ppm * 1000 / compound.odor_threshold_ppb) / 10)
+    : Math.min(100, compound.ppm / 10 * 100)
 
   return (
-    <div className="holo-card p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xs font-bold tracking-widest text-white/50 uppercase">
-          Odor Profile HUD
-        </h2>
-        {stinkMultiplier > 1 && (
-          <span className="text-[10px] font-mono text-[#ff00ff] bg-[#ff00ff15] px-2 py-0.5 rounded border border-[#ff00ff30]">
-            {stinkMultiplier}× HOLDER BOOST
-          </span>
-        )}
-      </div>
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.06, duration: 0.3 }}
+      className="relative rounded-lg border p-3 overflow-hidden"
+      style={{
+        borderColor: compound.color_hex + '44',
+        background: `linear-gradient(135deg, ${compound.color_hex}08 0%, transparent 60%)`,
+      }}
+    >
+      {/* Shimmer overlay */}
+      <div className="absolute inset-0 holo-shimmer pointer-events-none" />
 
-      {/* Stink Score Meter */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] text-white/40 uppercase tracking-wider">
-            Stink Score
-          </span>
-          <motion.span
-            className="font-display font-bold text-lg neon-green"
-            key={stinkScore}
-            initial={{ scale: 1.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 300 }}
-          >
-            {hasData ? `${stinkScore.toFixed(1)}/10` : '—'}
-          </motion.span>
-        </div>
-        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full stink-meter"
-            initial={{ width: 0 }}
-            animate={{ width: hasData ? `${stinkScore * 10}%` : '0%' }}
-            transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
-          />
-        </div>
-        {hasData && (
-          <div className="flex justify-between text-[9px] font-mono text-white/20">
-            <span>FRAGRANT</span>
-            <span>CATASTROPHIC</span>
+      <div className="flex items-start justify-between mb-1.5">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ background: compound.color_hex, boxShadow: `0 0 6px ${compound.color_hex}` }}
+            />
+            <span className="font-display text-[10px] font-bold uppercase tracking-wider text-white/80">
+              {compound.name}
+            </span>
+            {isSulfur && (
+              <span className="text-[9px] px-1 rounded bg-yellow-500/20 text-yellow-400 font-mono">S</span>
+            )}
           </div>
+          <span className="font-mono text-[9px] text-white/30 ml-3.5">{compound.formula}</span>
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-xs font-bold" style={{ color: compound.color_hex }}>
+            {compound.ppm < 0.01
+              ? compound.ppm.toExponential(1)
+              : compound.ppm.toFixed(compound.ppm < 1 ? 3 : 2)} ppm
+          </div>
+          <div className="font-mono text-[9px] text-white/30">
+            {compound.descriptor}
+          </div>
+        </div>
+      </div>
+
+      {/* Odor intensity bar */}
+      <div className="w-full h-1 rounded-full bg-white/5 overflow-hidden">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: compound.color_hex }}
+          initial={{ width: 0 }}
+          animate={{ width: `${odorBar}%` }}
+          transition={{ duration: 0.8, delay: index * 0.06 + 0.2, ease: 'easeOut' }}
+        />
+      </div>
+
+      {/* Fun fact */}
+      <p className="mt-1.5 text-[9px] text-white/25 font-mono leading-relaxed line-clamp-2">
+        {compound.fun_fact}
+      </p>
+    </motion.div>
+  )
+}
+
+function StinkScoreMeter({ score, multiplier }: { score: number; multiplier: number }) {
+  const segments = 10
+  const filled = Math.round(score)
+
+  const color = score >= 9 ? '#ff2244' : score >= 7 ? '#f97316' : score >= 4 ? '#facc15' : '#4ade80'
+
+  return (
+    <div className="holo-card p-4 mb-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-display text-xs font-bold uppercase tracking-widest text-white/50">
+          Stink Score
+        </span>
+        {multiplier > 1 && (
+          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#00ff8815] border border-[#00ff8830] text-[#00ff88]">
+            {multiplier}× HOLDER BOOST
+          </span>
         )}
       </div>
-
-      {/* Compound Cards */}
-      <div className="space-y-1.5">
-        <div className="font-mono text-[10px] text-white/30 uppercase tracking-wider mb-2">
-          Chemical Composition
-        </div>
-
-        <AnimatePresence>
-          {hasData ? (
-            COMPOUND_ORDER.filter(k => compounds[k]).map((key, i) => {
-              const compound = compounds[key]
-              const display = COMPOUND_DISPLAY[key]
-              const maxPpm = key === 'H2S' ? 12 : key === 'methanethiol' ? 4 : 2
-              const barWidth = Math.min(100, (compound.ppm / maxPpm) * 100)
-
-              return (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="group relative"
-                >
-                  <div
-                    className="rounded p-2.5 border border-white/5 bg-black/20 hover:bg-black/40 transition-colors cursor-default"
-                    style={{ borderLeftColor: display?.color + '40', borderLeftWidth: 2 }}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{display?.emoji}</span>
-                        <div>
-                          <div className="font-mono text-[11px] font-bold" style={{ color: display?.color }}>
-                            {display?.shortName}
-                          </div>
-                          <div className="font-mono text-[9px] text-white/30">
-                            {compound.descriptor}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-[11px] font-bold text-white/70">
-                          {compound.ppm.toFixed(3)} ppm
-                        </div>
-                        {compound.odor_units > 0 && (
-                          <div className="font-mono text-[9px] text-white/30">
-                            {compound.odor_units.toFixed(0)} OU
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* PPM bar */}
-                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: display?.color }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${barWidth}%` }}
-                        transition={{ duration: 0.6, delay: i * 0.05 + 0.2 }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tooltip with fun fact */}
-                  {compound.fun_fact && (
-                    <div className="
-                      absolute left-0 right-0 bottom-full mb-1 z-50
-                      opacity-0 group-hover:opacity-100 pointer-events-none
-                      transition-opacity duration-200
-                    ">
-                      <div className="glassmorphism border border-white/10 rounded p-2 text-[10px] font-mono text-white/60">
-                        {compound.fun_fact}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-8 text-white/20 font-mono text-xs"
-            >
-              <div className="text-4xl mb-2">💨</div>
-              <div>AWAITING EMISSION</div>
-              <div className="text-[10px] mt-1 text-white/10">Hit RIP ONE to begin analysis</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Emission metadata */}
-      {emitResult && (
+      <div className="flex items-end gap-2">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="border-t border-white/5 pt-3 space-y-1"
+          className="font-display text-5xl font-black leading-none"
+          style={{ color, textShadow: `0 0 20px ${color}60` }}
+          key={score}
+          initial={{ scale: 1.3, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, ease: 'backOut' }}
         >
-          {[
-            ['Emission ID', emitResult.emission_id],
-            ['Intensity', emitResult.intensity.toUpperCase()],
-            ['Duration', `${emitResult.fingerprint?.duration_ms ?? '?'}ms`],
-            ['Rank', `#${emitResult.rank ?? '?'}`],
-          ].map(([label, value]) => (
-            <div key={label} className="flex justify-between">
-              <span className="font-mono text-[10px] text-white/30">{label}</span>
-              <span className="font-mono text-[10px] text-white/60">{value}</span>
-            </div>
-          ))}
+          {score.toFixed(1)}
+        </motion.div>
+        <div className="font-mono text-white/30 text-sm mb-1">/10</div>
+      </div>
+      <div className="flex gap-1 mt-2">
+        {Array.from({ length: segments }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="flex-1 h-1.5 rounded-full"
+            style={{ background: i < filled ? color : 'rgba(255,255,255,0.06)' }}
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ delay: i * 0.04, duration: 0.2 }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function OdorHUD({ emitResult, stinkMultiplier }: OdorHUDProps) {
+  if (!emitResult) {
+    return (
+      <div className="holo-card p-6 flex flex-col items-center justify-center text-center" style={{ minHeight: 200 }}>
+        <div className="text-4xl mb-3">💨</div>
+        <div className="font-display text-xs uppercase tracking-widest text-white/30">
+          Awaiting Emission
+        </div>
+        <div className="font-mono text-[10px] text-white/15 mt-1">
+          Rip one to activate the odor HUD
+        </div>
+      </div>
+    )
+  }
+
+  const compounds = emitResult.odor_profile
+  const compoundEntries = Object.entries(compounds)
+  // Sort: sulfur first, then by ppm desc
+  const sorted = compoundEntries.sort(([, a], [, b]) => {
+    if (a.is_sulfur && !b.is_sulfur) return -1
+    if (!a.is_sulfur && b.is_sulfur) return 1
+    return b.ppm - a.ppm
+  })
+
+  return (
+    <div className="space-y-2">
+      <StinkScoreMeter score={emitResult.stink_score} multiplier={stinkMultiplier} />
+
+      {/* Rank badge */}
+      {emitResult.rank && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="holo-card px-4 py-2 flex items-center justify-between"
+        >
+          <span className="font-mono text-xs text-white/40">Leaderboard Rank</span>
+          <span className="font-display text-sm font-bold text-[#00ff88]">
+            #{emitResult.rank}
+          </span>
         </motion.div>
       )}
+
+      {/* Compound cards */}
+      <div className="holo-card p-3">
+        <div className="font-display text-[10px] uppercase tracking-widest text-white/30 mb-2 px-1">
+          Odor Profile — {compoundEntries.length} Compounds Detected
+        </div>
+        <div className="space-y-2">
+          <AnimatePresence>
+            {sorted.map(([key, compound], i) => (
+              <CompoundCard key={key} name={key} compound={compound} index={i} />
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   )
 }

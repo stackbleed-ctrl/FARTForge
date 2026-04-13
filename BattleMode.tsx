@@ -1,308 +1,263 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import type { EmitResult, IntensityLevel, WalletTier } from '@/lib/types'
 
-interface BattleAgent {
-  id: string
-  name: string
-  stinkScore: number
-  intensity: string
-  votes: number
-  stake: number
-}
-
-interface Props {
-  walletTier: 0 | 1 | 2 | 3
-}
-
-const INTENSITY_EMOJI: Record<string, string> = {
-  silent: '🤫', mild: '🌬️', moderate: '💨', intense: '🔥', nuclear: '☢️',
+interface BattleModeProps {
+  walletTier: WalletTier
 }
 
 const PRESET_AGENTS = [
-  'gpt-overlord-9000', 'claude-sonnet-ripper', 'llama-local-stinker',
-  'autogen-collective', 'gemini-ultra-riper', 'mistral-le-stinkeur',
-  'falcon-40b-farter', 'deepseek-coder-ripper',
+  'gpt-overlord-9000',
+  'claude-sonnet-ripper',
+  'llama-local-stinker',
+  'gemini-ultra-riper',
+  'grok-beta-ripper',
+  'mistral-le-stinkeur',
 ]
 
-export function BattleMode({ walletTier }: Props) {
-  const [agentA, setAgentA] = useState<BattleAgent | null>(null)
-  const [agentB, setAgentB] = useState<BattleAgent | null>(null)
-  const [battleActive, setBattleActive] = useState(false)
-  const [winner, setWinner] = useState<'A' | 'B' | null>(null)
-  const [stakeAmount, setStakeAmount] = useState(1000)
-  const [votedFor, setVotedFor] = useState<'A' | 'B' | null>(null)
-  const [countdown, setCountdown] = useState<number | null>(null)
+const INTENSITIES: IntensityLevel[] = ['silent', 'mild', 'moderate', 'intense', 'nuclear']
 
-  const generateAgent = (): BattleAgent => ({
-    id: crypto.randomUUID(),
-    name: PRESET_AGENTS[Math.floor(Math.random() * PRESET_AGENTS.length)],
-    stinkScore: 0,
-    intensity: 'moderate',
-    votes: Math.floor(Math.random() * 500),
-    stake: Math.floor(Math.random() * 50000),
+interface Combatant {
+  agentId: string
+  intensity: IntensityLevel
+  result: EmitResult | null
+  loading: boolean
+}
+
+async function emitForAgent(agentId: string, intensity: IntensityLevel, multiplier: number): Promise<EmitResult> {
+  const res = await fetch('/api/fart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      agent_id: agentId,
+      intensity,
+      context: 'Battle Mode',
+      stink_multiplier: multiplier,
+    }),
   })
+  if (!res.ok) throw new Error('Emit failed')
+  return res.json()
+}
 
-  const startBattle = async () => {
-    const a = generateAgent()
-    const b = generateAgent()
-    setAgentA(a)
-    setAgentB(b)
-    setBattleActive(true)
-    setWinner(null)
-    setVotedFor(null)
-
-    // Countdown
-    for (let i = 3; i >= 1; i--) {
-      setCountdown(i)
-      await new Promise(r => setTimeout(r, 1000))
-    }
-    setCountdown(null)
-
-    // Simulate battle
-    await new Promise(r => setTimeout(r, 2000))
-
-    const scoreA = 3 + Math.random() * 7
-    const scoreB = 3 + Math.random() * 7
-    const intensities = ['mild', 'moderate', 'intense', 'nuclear']
-
-    setAgentA(prev => prev ? { ...prev, stinkScore: parseFloat(scoreA.toFixed(1)), intensity: intensities[Math.floor(Math.random() * 4)] } : null)
-    setAgentB(prev => prev ? { ...prev, stinkScore: parseFloat(scoreB.toFixed(1)), intensity: intensities[Math.floor(Math.random() * 4)] } : null)
-
-    await new Promise(r => setTimeout(r, 1000))
-    setWinner(scoreA >= scoreB ? 'A' : 'B')
-    setBattleActive(false)
-  }
-
-  const vote = (side: 'A' | 'B') => {
-    if (votedFor || winner) return
-    setVotedFor(side)
-    if (side === 'A') setAgentA(prev => prev ? { ...prev, votes: prev.votes + 1 } : null)
-    else setAgentB(prev => prev ? { ...prev, votes: prev.votes + 1 } : null)
-  }
+function CombatantCard({
+  side,
+  combatant,
+  onAgentChange,
+  onIntensityChange,
+  isWinner,
+  battleDone,
+}: {
+  side: 'left' | 'right'
+  combatant: Combatant
+  onAgentChange: (id: string) => void
+  onIntensityChange: (i: IntensityLevel) => void
+  isWinner: boolean
+  battleDone: boolean
+}) {
+  const score = combatant.result?.stink_score ?? 0
+  const color = isWinner && battleDone ? '#00ff88' : '#ffffff30'
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="font-display font-black text-2xl tracking-widest mb-1" style={{
-          background: 'linear-gradient(135deg, #00ff88, #ff00ff)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          ⚔️ BATTLE MODE
-        </h2>
-        <p className="font-mono text-xs text-white/30">
-          Side-by-side agent fart battles. Stake $FARTFORGE. Vote. Win.
-        </p>
-      </div>
-
-      {/* Battle Arena */}
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-
-        {/* Agent A */}
-        <AgentCard
-          agent={agentA}
-          side="A"
-          isWinner={winner === 'A'}
-          isLoser={winner === 'B'}
-          isBattling={battleActive}
-          votedFor={votedFor}
-          onVote={() => vote('A')}
-        />
-
-        {/* VS */}
-        <div className="text-center space-y-2">
-          <div className="battle-vs">VS</div>
-          {countdown !== null && (
-            <motion.div
-              key={countdown}
-              className="font-display text-4xl font-black text-white"
-              initial={{ scale: 2, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0 }}
-            >
-              {countdown}
-            </motion.div>
-          )}
-        </div>
-
-        {/* Agent B */}
-        <AgentCard
-          agent={agentB}
-          side="B"
-          isWinner={winner === 'B'}
-          isLoser={winner === 'A'}
-          isBattling={battleActive}
-          votedFor={votedFor}
-          onVote={() => vote('B')}
-        />
-      </div>
-
-      {/* Controls */}
-      <div className="holo-card p-4 space-y-4">
-        {/* Stake */}
-        {walletTier > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] text-white/40">Stake Amount</span>
-              <span className="font-mono text-[11px] text-[#00ff88]">{stakeAmount.toLocaleString()} $FARTFORGE</span>
-            </div>
-            <input
-              type="range"
-              min={100}
-              max={walletTier >= 3 ? 1000000 : walletTier >= 2 ? 100000 : 10000}
-              step={100}
-              value={stakeAmount}
-              onChange={e => setStakeAmount(Number(e.target.value))}
-              className="w-full accent-[#00ff88]"
-            />
-            <div className="flex justify-between font-mono text-[9px] text-white/20">
-              <span>100</span>
-              <span>{walletTier >= 3 ? '1M' : walletTier >= 2 ? '100K' : '10K'}</span>
-            </div>
-          </div>
+    <motion.div
+      className="holo-card p-5 flex-1"
+      animate={isWinner && battleDone ? { boxShadow: '0 0 40px rgba(0,255,136,0.3)' } : {}}
+    >
+      {/* Winner crown */}
+      <AnimatePresence>
+        {isWinner && battleDone && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="text-center text-3xl mb-2"
+          >
+            👑
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Battle button */}
-        <motion.button
-          className="w-full btn-rip py-3"
-          onClick={startBattle}
-          disabled={battleActive}
-          whileTap={{ scale: 0.97 }}
-        >
-          {battleActive ? (
-            <span className="flex items-center justify-center gap-2">
-              <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}>
-                💨
-              </motion.span>
-              BATTLE IN PROGRESS...
-            </span>
-          ) : winner ? '🔄 NEW BATTLE' : '⚔️ START BATTLE'}
-        </motion.button>
-
-        {/* Winner announcement */}
-        <AnimatePresence>
-          {winner && agentA && agentB && (
-            <motion.div
-              className="text-center p-4 rounded border border-[#ffd70040] bg-[#ffd70008]"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div className="font-display text-lg font-black text-[#ffd700] mb-1">
-                🏆 {winner === 'A' ? agentA.name : agentB.name} WINS!
-              </div>
-              <div className="font-mono text-xs text-white/40">
-                {(winner === 'A' ? agentA.stinkScore : agentB.stinkScore).toFixed(1)} vs {(winner === 'A' ? agentB.stinkScore : agentA.stinkScore).toFixed(1)} stink score
-              </div>
-              {votedFor === winner ? (
-                <div className="mt-2 font-mono text-xs text-[#00ff88]">
-                  ✓ Correct vote! +{stakeAmount.toLocaleString()} $FARTFORGE
-                </div>
-              ) : votedFor && (
-                <div className="mt-2 font-mono text-xs text-red-400">
-                  ✗ Wrong vote. -{Math.floor(stakeAmount * 0.5).toLocaleString()} $FARTFORGE
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="font-display text-[10px] uppercase tracking-widest text-white/30 mb-3 text-center">
+        {side === 'left' ? 'Agent Alpha' : 'Agent Beta'}
       </div>
-    </div>
+
+      {/* Agent selector */}
+      <select
+        value={combatant.agentId}
+        onChange={e => onAgentChange(e.target.value)}
+        className="w-full bg-black/30 border border-white/10 rounded px-3 py-2 font-mono text-xs text-white/70
+          focus:outline-none focus:border-[#00ff8860] mb-3"
+      >
+        {PRESET_AGENTS.map(a => (
+          <option key={a} value={a} className="bg-[#030308]">{a}</option>
+        ))}
+        <option value="custom-agent" className="bg-[#030308]">custom-agent</option>
+      </select>
+
+      {/* Intensity */}
+      <div className="flex gap-1 mb-4">
+        {INTENSITIES.map(lvl => (
+          <button
+            key={lvl}
+            onClick={() => onIntensityChange(lvl)}
+            className={[
+              'flex-1 py-1.5 text-[9px] font-mono uppercase rounded border transition-all',
+              combatant.intensity === lvl
+                ? 'border-[#00ff88] text-[#00ff88] bg-[#00ff8815]'
+                : 'border-white/10 text-white/25 hover:text-white/50',
+            ].join(' ')}
+          >
+            {lvl[0].toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {/* Score display */}
+      <div className="text-center py-4">
+        {combatant.loading ? (
+          <span className="font-mono text-xs text-white/30 animate-pulse">ripping...</span>
+        ) : combatant.result ? (
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', bounce: 0.4 }}
+          >
+            <div
+              className="font-display text-6xl font-black"
+              style={{ color, textShadow: isWinner && battleDone ? '0 0 30px #00ff8870' : 'none' }}
+            >
+              {score.toFixed(1)}
+            </div>
+            <div className="font-mono text-xs text-white/30 mt-1">stink score</div>
+            <div className="font-mono text-[10px] text-white/20 mt-0.5">
+              {combatant.result.odor_profile?.H2S
+                ? `H₂S: ${(combatant.result.odor_profile.H2S as {ppm: number}).ppm.toFixed(2)} ppm`
+                : ''}
+            </div>
+          </motion.div>
+        ) : (
+          <div className="font-display text-6xl font-black text-white/10">—</div>
+        )}
+      </div>
+    </motion.div>
   )
 }
 
-function AgentCard({ agent, side, isWinner, isLoser, isBattling, votedFor, onVote }: {
-  agent: BattleAgent | null
-  side: 'A' | 'B'
-  isWinner: boolean
-  isLoser: boolean
-  isBattling: boolean
-  votedFor: 'A' | 'B' | null
-  onVote: () => void
-}) {
+export function BattleMode({ walletTier }: BattleModeProps) {
+  const multiplier = [1, 1.5, 2, 3][walletTier]
+
+  const [alpha, setAlpha] = useState<Combatant>({
+    agentId: PRESET_AGENTS[0], intensity: 'intense', result: null, loading: false,
+  })
+  const [beta, setBeta] = useState<Combatant>({
+    agentId: PRESET_AGENTS[1], intensity: 'nuclear', result: null, loading: false,
+  })
+  const [battleDone, setBattleDone] = useState(false)
+
+  const startBattle = useCallback(async () => {
+    setBattleDone(false)
+    setAlpha(a => ({ ...a, result: null, loading: true }))
+    setBeta(b => ({ ...b, result: null, loading: true }))
+
+    try {
+      const [rA, rB] = await Promise.all([
+        emitForAgent(alpha.agentId, alpha.intensity, multiplier),
+        emitForAgent(beta.agentId, beta.intensity, multiplier),
+      ])
+      setAlpha(a => ({ ...a, result: rA, loading: false }))
+      setBeta(b => ({ ...b, result: rB, loading: false }))
+      setBattleDone(true)
+    } catch {
+      setAlpha(a => ({ ...a, loading: false }))
+      setBeta(b => ({ ...b, loading: false }))
+    }
+  }, [alpha.agentId, alpha.intensity, beta.agentId, beta.intensity, multiplier])
+
+  const alphaScore = alpha.result?.stink_score ?? 0
+  const betaScore = beta.result?.stink_score ?? 0
+  const alphaWins = battleDone && alphaScore >= betaScore
+  const betaWins = battleDone && betaScore > alphaScore
+  const isTie = battleDone && alphaScore === betaScore
+
   return (
-    <motion.div
-      className={`
-        holo-card p-4 text-center space-y-3 transition-all duration-500
-        ${isWinner ? 'border-[#ffd700] shadow-[0_0_30px_rgba(255,215,0,0.3)]' : ''}
-        ${isLoser ? 'opacity-40' : ''}
-      `}
-      animate={isBattling ? { scale: [1, 1.02, 1] } : {}}
-      transition={{ repeat: isBattling ? Infinity : 0, duration: 0.5 }}
-    >
-      {/* Agent avatar */}
-      <div className={`
-        w-16 h-16 mx-auto rounded-full border-2 flex items-center justify-center text-3xl
-        ${isWinner ? 'border-[#ffd700] shadow-[0_0_20px_rgba(255,215,0,0.4)]' : 'border-[#00ff8840]'}
-        ${isBattling ? 'animate-pulse' : ''}
-      `}>
-        🤖
+    <div className="space-y-4">
+      <div className="text-center">
+        <div className="font-display text-lg font-black uppercase tracking-widest text-white/80">
+          ⚔️ Battle Mode
+        </div>
+        <div className="font-mono text-xs text-white/30 mt-1">
+          Side-by-side agent fart battle. May the smelliest agent win.
+        </div>
       </div>
 
-      {/* Name */}
-      <div className="font-mono text-[11px] text-white/70 break-all">
-        {agent ? agent.name : `Agent ${side}`}
+      {/* VS Layout */}
+      <div className="flex gap-3 items-stretch">
+        <CombatantCard
+          side="left"
+          combatant={alpha}
+          onAgentChange={id => setAlpha(a => ({ ...a, agentId: id }))}
+          onIntensityChange={i => setAlpha(a => ({ ...a, intensity: i }))}
+          isWinner={alphaWins}
+          battleDone={battleDone}
+        />
+
+        {/* VS divider */}
+        <div className="flex flex-col items-center justify-center gap-2 flex-shrink-0 w-12">
+          <div className="w-px flex-1 bg-white/10" />
+          <span className="font-display text-sm font-black text-white/20">VS</span>
+          <div className="w-px flex-1 bg-white/10" />
+        </div>
+
+        <CombatantCard
+          side="right"
+          combatant={beta}
+          onAgentChange={id => setBeta(b => ({ ...b, agentId: id }))}
+          onIntensityChange={i => setBeta(b => ({ ...b, intensity: i }))}
+          isWinner={betaWins}
+          battleDone={battleDone}
+        />
       </div>
 
-      {/* Stink score */}
-      {agent && agent.stinkScore > 0 && (
-        <motion.div
-          className="font-display font-black text-2xl text-[#00ff88] neon-green"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300 }}
-        >
-          {agent.stinkScore.toFixed(1)}
-          <span className="text-sm font-normal text-white/30 ml-1">/10</span>
-        </motion.div>
-      )}
+      {/* Battle result banner */}
+      <AnimatePresence>
+        {battleDone && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="holo-card p-4 text-center"
+          >
+            {isTie ? (
+              <div className="font-display text-sm font-bold text-white/50">🤝 IT'S A TIE — BOTH EQUALLY RANK</div>
+            ) : (
+              <>
+                <div className="font-display text-base font-black text-[#00ff88]">
+                  {alphaWins ? alpha.agentId : beta.agentId} WINS
+                </div>
+                <div className="font-mono text-xs text-white/30 mt-1">
+                  by {Math.abs(alphaScore - betaScore).toFixed(2)} stink points
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Intensity */}
-      {agent && agent.intensity && agent.stinkScore > 0 && (
-        <div className="font-mono text-xs text-white/40">
-          {INTENSITY_EMOJI[agent.intensity]} {agent.intensity.toUpperCase()}
+      {/* Battle button */}
+      <motion.button
+        onClick={startBattle}
+        disabled={alpha.loading || beta.loading}
+        whileTap={{ scale: 0.97 }}
+        className="w-full btn-rip py-4 text-base"
+      >
+        {alpha.loading || beta.loading ? '💨 RIPPING...' : '⚔️ START BATTLE'}
+      </motion.button>
+
+      {walletTier > 0 && (
+        <div className="text-center font-mono text-[10px] text-[#00ff88]">
+          {multiplier}× holder multiplier applied to both agents
         </div>
       )}
-
-      {/* Votes */}
-      {agent && (
-        <div className="font-mono text-[10px] text-white/30">
-          {agent.votes.toLocaleString()} votes
-        </div>
-      )}
-
-      {/* Vote button */}
-      {agent && !isWinner && !isLoser && (
-        <button
-          onClick={onVote}
-          disabled={!!votedFor}
-          className={`
-            w-full py-1.5 rounded border text-[11px] font-mono font-bold uppercase
-            transition-all duration-150
-            ${votedFor === side
-              ? 'border-[#00ff88] text-[#00ff88] bg-[#00ff8820]'
-              : votedFor
-              ? 'border-white/10 text-white/20 cursor-not-allowed'
-              : 'border-[#00ff8840] text-white/50 hover:border-[#00ff88] hover:text-[#00ff88] cursor-pointer'
-            }
-          `}
-        >
-          {votedFor === side ? '✓ VOTED' : `VOTE ${side}`}
-        </button>
-      )}
-
-      {isWinner && (
-        <motion.div
-          className="font-display text-xs font-black text-[#ffd700]"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ repeat: Infinity, duration: 1 }}
-        >
-          👑 WINNER
-        </motion.div>
-      )}
-    </motion.div>
+    </div>
   )
 }

@@ -1,164 +1,149 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import type { LeaderboardEntry, IntensityLevel } from '@/lib/types'
 
-interface LeaderboardEntry {
-  rank: number
-  emission_id: string
-  agent_id: string
-  intensity: string
-  stink_score: number
-  context: string
-  timestamp: string
-}
-
-interface Props {
+interface LeaderboardProps {
   maxRows?: number
   expanded?: boolean
 }
 
-const INTENSITY_EMOJI: Record<string, string> = {
+const INTENSITY_ICONS: Record<IntensityLevel, string> = {
   silent: '🤫', mild: '🌬️', moderate: '💨', intense: '🔥', nuclear: '☢️',
 }
 
 const RANK_STYLES: Record<number, string> = {
-  1: 'text-[#FFD700] font-bold',
-  2: 'text-[#C0C0C0]',
-  3: 'text-[#CD7F32]',
+  1: 'text-yellow-400',
+  2: 'text-slate-300',
+  3: 'text-amber-600',
 }
 
-export function Leaderboard({ maxRows = 10, expanded = false }: Props) {
+function scoreColor(score: number) {
+  if (score >= 9) return '#ff2244'
+  if (score >= 7) return '#f97316'
+  if (score >= 4) return '#facc15'
+  return '#4ade80'
+}
+
+function timeAgo(ts: string) {
+  const diff = Date.now() - new Date(ts).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
+export function Leaderboard({ maxRows = 10, expanded = false }: LeaderboardProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [source, setSource] = useState<string>('')
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await fetch(`/api/leaderboard?limit=${maxRows}`)
-      if (res.ok) {
-        const data = await res.json()
-        setEntries(data.entries ?? [])
-        setLastUpdate(new Date())
-      }
+      const data = await res.json()
+      setEntries(data.entries ?? [])
+      setSource(data.source ?? '')
     } catch {
-      // Fallback mock data
-      setEntries(MOCK_ENTRIES.slice(0, maxRows))
+      // Keep existing data on error
     } finally {
       setLoading(false)
     }
-  }
+  }, [maxRows])
 
   useEffect(() => {
     fetchLeaderboard()
-    const interval = setInterval(fetchLeaderboard, 10000)
+    // Poll every 15s for live updates
+    const interval = setInterval(fetchLeaderboard, 15_000)
     return () => clearInterval(interval)
-  }, [maxRows])
+  }, [fetchLeaderboard])
 
   return (
-    <div className="holo-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-display text-xs font-bold tracking-widest text-white/50 uppercase">
-          🏆 Stink Leaderboard
-        </h2>
+    <div className="holo-card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <span className="font-display text-xs font-bold uppercase tracking-widest text-white/60">
+          🏆 Leaderboard
+        </span>
         <div className="flex items-center gap-2">
-          {lastUpdate && (
-            <span className="font-mono text-[9px] text-white/20">
-              {lastUpdate.toLocaleTimeString()}
-            </span>
+          {source === 'mock' && (
+            <span className="font-mono text-[9px] text-white/20">demo data</span>
           )}
-          <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
+          <button
+            onClick={fetchLeaderboard}
+            className="font-mono text-[9px] text-white/30 hover:text-[#00ff88] transition-colors"
+          >
+            ↻ refresh
+          </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-10 bg-white/3 rounded animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-1">
+      {/* Column headers */}
+      <div className="grid grid-cols-[28px_1fr_64px_40px] gap-2 px-4 py-1.5 border-b border-white/5">
+        {['#', 'Agent', 'Score', 'Time'].map(h => (
+          <span key={h} className="font-display text-[9px] uppercase tracking-widest text-white/20">
+            {h}
+          </span>
+        ))}
+      </div>
+
+      {/* Rows */}
+      <div className="overflow-y-auto" style={{ maxHeight: expanded ? '70vh' : '320px' }}>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <span className="font-mono text-xs text-white/20 animate-pulse">loading...</span>
+          </div>
+        ) : (
           <AnimatePresence>
-            {entries.map((entry, i) => (
+            {entries.map((entry, idx) => (
               <motion.div
                 key={entry.emission_id}
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className={`
-                  flex items-center gap-2 px-2 py-2 rounded
-                  border border-transparent hover:border-[#00ff8820] hover:bg-[#00ff8806]
-                  transition-colors cursor-default group
-                  ${i === 0 ? 'bg-[#FFD70008] border-[#FFD70020]' : ''}
-                `}
+                transition={{ delay: idx * 0.03 }}
+                className="grid grid-cols-[28px_1fr_64px_40px] gap-2 px-4 py-2.5 border-b border-white/[0.03]
+                  hover:bg-white/[0.02] transition-colors group"
               >
                 {/* Rank */}
-                <div className={`w-5 text-center font-mono text-[11px] flex-shrink-0 ${RANK_STYLES[entry.rank] || 'text-white/30'}`}>
-                  {entry.rank <= 3
-                    ? ['🥇','🥈','🥉'][entry.rank - 1]
-                    : `#${entry.rank}`}
-                </div>
-
-                {/* Intensity emoji */}
-                <span className="text-sm flex-shrink-0">
-                  {INTENSITY_EMOJI[entry.intensity] ?? '💨'}
+                <span className={`font-display text-xs font-bold ${RANK_STYLES[entry.rank] ?? 'text-white/30'}`}>
+                  {entry.rank <= 3 ? ['🥇','🥈','🥉'][entry.rank - 1] : `#${entry.rank}`}
                 </span>
 
                 {/* Agent + context */}
-                <div className="flex-1 min-w-0">
-                  <div className="font-mono text-[11px] text-white/70 truncate">
-                    {entry.agent_id}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px]">{INTENSITY_ICONS[entry.intensity]}</span>
+                    <span className="font-mono text-xs text-white/70 truncate">{entry.agent_id}</span>
                   </div>
-                  {expanded && entry.context && (
-                    <div className="font-mono text-[9px] text-white/30 truncate">
-                      {entry.context}
-                    </div>
-                  )}
+                  <div className="font-mono text-[9px] text-white/25 truncate mt-0.5">
+                    {entry.context}
+                  </div>
                 </div>
 
-                {/* Stink score */}
-                <div className="text-right flex-shrink-0">
-                  <div className={`font-display font-bold text-sm ${
-                    entry.stink_score >= 9 ? 'text-[#ff4444]' :
-                    entry.stink_score >= 7 ? 'text-[#ff8800]' :
-                    entry.stink_score >= 5 ? 'text-[#ffd700]' :
-                    'text-[#00ff88]'
-                  }`}>
+                {/* Score */}
+                <div className="flex items-center justify-end">
+                  <span
+                    className="font-display text-sm font-bold"
+                    style={{ color: scoreColor(entry.stink_score) }}
+                  >
                     {entry.stink_score.toFixed(1)}
-                  </div>
-                  <div className="font-mono text-[8px] text-white/20">STINK</div>
+                  </span>
+                </div>
+
+                {/* Time */}
+                <div className="flex items-center justify-end">
+                  <span className="font-mono text-[9px] text-white/20 group-hover:text-white/40 transition-colors">
+                    {timeAgo(entry.timestamp)}
+                  </span>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
-
-          {entries.length === 0 && (
-            <div className="text-center py-8 font-mono text-[11px] text-white/20">
-              No emissions recorded yet.<br />Be the first to rip one. 💨
-            </div>
-          )}
-        </div>
-      )}
-
-      {expanded && (
-        <div className="mt-4 pt-3 border-t border-white/5 text-center">
-          <button
-            onClick={fetchLeaderboard}
-            className="font-mono text-[10px] text-[#00ff88] hover:text-[#00ff88] opacity-50 hover:opacity-100 transition-opacity"
-          >
-            ↻ REFRESH
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
-
-const MOCK_ENTRIES: LeaderboardEntry[] = [
-  { rank: 1, emission_id: 'aa1', agent_id: 'gpt-overlord-9000', intensity: 'nuclear',   stink_score: 9.8, context: 'Solved the alignment problem', timestamp: '' },
-  { rank: 2, emission_id: 'bb2', agent_id: 'claude-sonnet-ripper', intensity: 'intense', stink_score: 8.9, context: 'Wrote 10k lines in one shot',  timestamp: '' },
-  { rank: 3, emission_id: 'cc3', agent_id: 'llama-local-stinker', intensity: 'intense', stink_score: 8.4, context: 'Ran inference on a potato',    timestamp: '' },
-  { rank: 4, emission_id: 'dd4', agent_id: 'autogen-collective',  intensity: 'moderate', stink_score: 7.2, context: 'Multi-agent consensus reached',timestamp: '' },
-  { rank: 5, emission_id: 'ee5', agent_id: 'langchain-pipe',      intensity: 'mild',     stink_score: 5.1, context: 'Fetched a URL',               timestamp: '' },
-]

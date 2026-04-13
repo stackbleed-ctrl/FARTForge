@@ -5,14 +5,24 @@ Scientific frequency fingerprinting of fart emissions using librosa.
 Computes MFCCs, spectral centroid, spectral rolloff, zero-crossing rate,
 chroma features, and temporal statistics.
 
-This is where the smelliest agent wins — every fart is cryptographically unique.
+Every fart is cryptographically unique. May the smelliest agent win.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional
+
 import numpy as np
+
+# ── Module-level librosa availability check (not per-call) ───────────────────
+try:
+    import librosa
+    import librosa.feature
+    import librosa.beat
+    import librosa.onset
+    _LIBROSA_AVAILABLE = True
+except ImportError:
+    _LIBROSA_AVAILABLE = False
 
 
 @dataclass
@@ -26,29 +36,28 @@ class FartFingerprint:
     """
 
     # ── Core MFCCs (mel-frequency cepstral coefficients) ──────────────────
-    # 13 coefficients — the "DNA" of the fart's timbre
-    mfcc_mean: list[float] = field(default_factory=list)   # shape: (13,)
-    mfcc_std: list[float] = field(default_factory=list)    # shape: (13,)
-    mfcc_delta_mean: list[float] = field(default_factory=list)  # temporal dynamics
+    mfcc_mean: list[float] = field(default_factory=list)       # shape: (13,)
+    mfcc_std: list[float] = field(default_factory=list)        # shape: (13,)
+    mfcc_delta_mean: list[float] = field(default_factory=list) # temporal dynamics
 
     # ── Spectral features ─────────────────────────────────────────────────
-    spectral_centroid: float = 0.0       # "brightness" in Hz (low = rumbly)
-    spectral_bandwidth: float = 0.0      # spread around centroid in Hz
-    spectral_rolloff: float = 0.0        # Hz below which 85% of energy sits
-    spectral_flatness: float = 0.0       # 0=tonal, 1=noise-like (1.0 = pure gas)
-    spectral_contrast: list[float] = field(default_factory=list)  # sub-band peaks
+    spectral_centroid: float = 0.0   # "brightness" in Hz (low = rumbly)
+    spectral_bandwidth: float = 0.0  # spread around centroid in Hz
+    spectral_rolloff: float = 0.0    # Hz below which 85% of energy sits
+    spectral_flatness: float = 0.0   # 0=tonal, 1=noise-like (1.0 = pure gas)
+    spectral_contrast: list[float] = field(default_factory=list)
 
     # ── Temporal features ─────────────────────────────────────────────────
-    zero_crossing_rate: float = 0.0     # higher = more fricative/turbulent
-    rms_energy: float = 0.0             # RMS amplitude
-    duration_ms: int = 0                # total emission duration
+    zero_crossing_rate: float = 0.0  # higher = more fricative/turbulent
+    rms_energy: float = 0.0          # RMS amplitude
+    duration_ms: int = 0             # total emission duration
 
     # ── Rhythm / periodicity ──────────────────────────────────────────────
-    tempo_bpm: float = 0.0              # flutter rate (sphincter oscillation freq)
-    onset_count: int = 0                # number of distinct gas pulses
+    tempo_bpm: float = 0.0           # flutter rate (sphincter oscillation freq)
+    onset_count: int = 0             # number of distinct gas pulses
 
     # ── Perceptual ────────────────────────────────────────────────────────
-    loudness_lufs: float = 0.0          # perceived loudness
+    loudness_lufs: float = 0.0       # perceived loudness
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -56,17 +65,16 @@ class FartFingerprint:
     @property
     def rumble_score(self) -> float:
         """0–1: how much low-frequency rumble (drives slow particle clouds)."""
-        # Low centroid + high RMS + low ZCR = maximum rumble
         centroid_factor = 1.0 - min(1.0, self.spectral_centroid / 5000)
         zcr_factor = 1.0 - min(1.0, self.zero_crossing_rate * 20)
-        return (centroid_factor * 0.6 + zcr_factor * 0.4)
+        return centroid_factor * 0.6 + zcr_factor * 0.4
 
     @property
     def sharpness_score(self) -> float:
         """0–1: how sharp/percussive (drives rapid sulfur spark particles)."""
         centroid_factor = min(1.0, self.spectral_centroid / 4000)
         zcr_factor = min(1.0, self.zero_crossing_rate * 15)
-        return (centroid_factor * 0.5 + zcr_factor * 0.5)
+        return centroid_factor * 0.5 + zcr_factor * 0.5
 
     @property
     def wetness_score(self) -> float:
@@ -90,15 +98,7 @@ def compute_fingerprint(
     Returns:
         FartFingerprint with all features populated.
     """
-    try:
-        import librosa
-        import librosa.feature
-        _LIBROSA_AVAILABLE = True
-    except ImportError:
-        _LIBROSA_AVAILABLE = False
-
     if not _LIBROSA_AVAILABLE:
-        # Fallback: compute basic stats without librosa
         return _fallback_fingerprint(audio, sample_rate)
 
     # Ensure mono float32
@@ -111,7 +111,6 @@ def compute_fingerprint(
     # ── MFCCs ─────────────────────────────────────────────────────────────
     mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=n_mfcc)
     mfcc_delta = librosa.feature.delta(mfccs)
-
     mfcc_mean = mfccs.mean(axis=1).tolist()
     mfcc_std = mfccs.std(axis=1).tolist()
     mfcc_delta_mean = mfcc_delta.mean(axis=1).tolist()
@@ -137,9 +136,8 @@ def compute_fingerprint(
     onset_frames = librosa.onset.onset_detect(y=audio, sr=sample_rate)
     onset_count = len(onset_frames)
 
-    # ── Loudness (A-weighted approximation) ───────────────────────────────
     rms_val = float(rms.mean())
-    loudness_lufs = 20 * np.log10(rms_val + 1e-9)  # dBFS approximation
+    loudness_lufs = 20 * np.log10(rms_val + 1e-9)
 
     return FartFingerprint(
         mfcc_mean=mfcc_mean,
@@ -166,37 +164,28 @@ def _fallback_fingerprint(audio: np.ndarray, sample_rate: int) -> FartFingerprin
     """
     duration_ms = int(len(audio) / sample_rate * 1000)
 
-    # RMS
     rms = float(np.sqrt(np.mean(audio**2)))
-
-    # Zero crossing rate
     zcr = float(np.mean(np.abs(np.diff(np.sign(audio))) / 2))
 
-    # FFT for spectral features
     fft = np.fft.rfft(audio)
     freqs = np.fft.rfftfreq(len(audio), d=1 / sample_rate)
     magnitude = np.abs(fft)
     total_power = magnitude.sum() + 1e-9
 
-    # Spectral centroid
     centroid = float(np.sum(freqs * magnitude) / total_power)
-
-    # Spectral rolloff (85%)
     cumulative = np.cumsum(magnitude)
     rolloff_idx = np.searchsorted(cumulative, 0.85 * cumulative[-1])
     rolloff = float(freqs[min(rolloff_idx, len(freqs) - 1)])
 
-    # Spectral flatness (geometric mean / arithmetic mean of magnitude)
     log_mag = np.log(magnitude + 1e-9)
     geo_mean = np.exp(log_mag.mean())
     arith_mean = magnitude.mean() + 1e-9
     flatness = float(geo_mean / arith_mean)
 
-    # Fake 13 MFCCs from FFT bands
     n_mfcc = 13
-    band_size = len(magnitude) // n_mfcc
+    band_size = max(1, len(magnitude) // n_mfcc)
     mfcc_mean = [
-        float(magnitude[i * band_size : (i + 1) * band_size].mean())
+        float(magnitude[i * band_size: (i + 1) * band_size].mean())
         for i in range(n_mfcc)
     ]
 
