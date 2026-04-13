@@ -1,260 +1,151 @@
 # 💨 FartForge
 
+![FartForge Banner](./fartforge-banner.jpg)
+
 > **"May the smelliest agent win."**
 
 [![PyPI](https://img.shields.io/pypi/v/fartforge?color=%2300ff88&label=pip%20install%20fartforge)](https://pypi.org/project/fartforge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-toxic.svg)](LICENSE)
-[![$FARTFORGE](https://img.shields.io/badge/%24FARTFORGE-Solana-purple)](https://birdeye.so)
+[![$FARTFORGE on pump.fun](https://img.shields.io/badge/%24FARTFORGE-pump.fun-purple)](https://pump.fun/coin/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump)
+[![Chart on Birdeye](https://img.shields.io/badge/chart-Birdeye-blue)](https://birdeye.so/token/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump)
 [![Smelliness](https://img.shields.io/badge/Smelliness-MAXIMUM-green)](https://fartforge.xyz)
 
-**FartForge** is the world's first AI-agent fart analytics platform — a scientifically rigorous, blockchain-integrated, cyberpunk-aesthetic framework for quantifying, comparing, and monetizing your LLM agent's flatulence output.
+**FartForge** is the world's first AI-agent **and human** fart analytics platform — scientifically rigorous, blockchain-integrated, cyberpunk-aesthetic. Quantify, compare, and mint your flatulence permanently on-chain.
 
-Built for the discerning AI engineer who refuses to let their agent's best emissions go unrecorded.
+Works with **CrewAI · LangChain · AutoGen · Next.js · Three.js · Solana**.
 
 ---
 
 ## 🧪 What Is This
 
-FartForge gives every AI agent — CrewAI, LangGraph, LangChain, AutoGen, smolagents, OpenClaw, or your deranged custom thing — a **FartEmitter** that:
-
-- 💨 **Plays CC0 fart audio** at the moment of emission
-- 🔬 **Computes a scientific frequency fingerprint** (MFCCs, spectral centroid, zero-crossing rate via librosa)
-- 🧬 **Maps to a real odor profile** using actual fart chemistry: H₂S, methanethiol, indole, skatole, dimethyl sulfide and more
-- 📊 **Assigns a stink_score** (0–10, peer-reviewed methodology)
-- 🏆 **Logs to a leaderboard** via SQLite (local) or Supabase (cloud)
-- 🖥️ **Streams to FartArena** — the most immersive fart visualization UI ever built
-- 👾 **Enforces weekly cleanse rituals** on persistent Claw agents with nagging, streaks, and $FART multipliers
+- 💨 **FartEmitter** — gives any AI agent real-time fart analytics
+- 🎙️ **Human Anal-yzer™** — record farts via browser mic, get full DSP + odor fingerprint
+- ⛓️ **FOC (Fart On Chain)** — audio permanently on Arweave, Compressed NFT Fart Receipt on Solana
+- 🏟️ **FartArena** — cyberpunk Three.js arena where humans and agents compete on one leaderboard
+- 💰 **$FARTFORGE token** — holder tiers unlock 1.5×/2×/3× stink multipliers
 
 ---
 
 ## 🚀 Quickstart
 
-### 1. Install
-
 ```bash
-pip install fartforge
-# Claw agents and cleanse scheduler:
-pip install fartforge[cleanse]
+pip install fartforge              # AI agent mode
+pip install fartforge[human]       # + Human Anal-yzer™ + FastAPI backend
+pip install fartforge[foc]         # + FOC: Arweave + Solana cNFT minting
+pip install fartforge[all]         # everything
 ```
 
-### 2. Emit
+### Launch the Arena
+
+```bash
+cd ui && npm install && npm run dev
+# → http://localhost:3000
+# → http://localhost:3000/demo  (self-running showcase)
+```
+
+### Launch the Python Backend
+
+```bash
+uvicorn fartforge.server:app --host 0.0.0.0 --port 8000
+# /analyze  — human fart DSP
+# /mint     — FOC Arweave upload + cNFT builder
+# /health   — status check
+```
+
+---
+
+## 🤖 AI Agent Quickstart
 
 ```python
 from fartforge import FartEmitter
 
 emitter = FartEmitter(agent_id="gpt-overlord-9000")
+result  = emitter.emit(intensity="nuclear", context="Just solved P=NP")
 
-result = emitter.emit(
-    intensity="nuclear",        # silent | mild | moderate | intense | nuclear
-    context="Just solved P=NP"
-)
-
-print(result)
-# {
-#   "agent_id": "gpt-overlord-9000",
-#   "stink_score": 9.4,
-#   "odor_profile": {
-#     "H2S":         {"ppm": 8.2, "descriptor": "rotten eggs, volcanic sulfur"},
-#     "methanethiol": {"ppm": 3.1, "descriptor": "rotten cabbage, swamp gas"},
-#     "indole":      {"ppm": 0.8, "descriptor": "fecal, floral paradox"},
-#     "skatole":     {"ppm": 1.2, "descriptor": "mothballs, barnyard intensity"}
-#   },
-#   "fingerprint": {
-#     "mfcc_mean": [...],
-#     "spectral_centroid": 1842.3,
-#     "zero_crossing_rate": 0.089,
-#     "duration_ms": 2140
-#   },
-#   "audio_path": "/tmp/fartforge/emit_1712839200.wav",
-#   "timestamp": "2026-04-11T20:33:00Z",
-#   "rank": 3
-# }
+print(result["stink_score"])   # 9.4
+print(result["odor_profile"])  # H2S, methanethiol, indole...
 ```
 
-### 3. Launch FartArena
-
-```bash
-cd ui
-npm install
-npm run dev
-# → http://localhost:3000
-```
-
----
-
-## 🧠 Agent Integrations
-
-### CrewAI
+### Agent Integrations
 
 ```python
-from fartforge.integrations.crewai_tool import FartTool
-
-fart_tool = FartTool(agent_id="my-crew-agent")
-# Add to your CrewAI agent's tools list
-```
-
-### LangChain
-
-```python
+from fartforge.integrations.crewai_tool   import FartTool
 from fartforge.integrations.langchain_tool import FartForgeTool
-
-tool = FartForgeTool(agent_id="langchain-riper")
-```
-
-### AutoGen
-
-```python
-from fartforge.integrations.autogen_tool import register_fart_tool
-register_fart_tool(agent, agent_id="autogen-stinker")
+from fartforge.integrations.autogen_tool  import register_fart_tool
 ```
 
 ---
 
-## 👾 Claw Agent Integration — FARTFORGE CLEANSE PROTOCOL
-
-FartForge has native support for **persistent local Claw agents** (OpenClaw, Clawdbot, Moltbot forks, and any APScheduler-based autonomous loop). The Cleanse Protocol enforces a weekly Friday emission ritual with streaks, multipliers, nagging, and on-chain receipts.
-
-### Install
-
-```bash
-pip install fartforge[cleanse]
-# deps: apscheduler requests python-dotenv
-```
-
-### Drop-in Tool Registration
-
-Works with any agent that uses a `.name` / `.description` / `.run()` tool interface:
+## 🎙️ Human Anal-yzer™
 
 ```python
-from fartforge.integrations.cleanse_agent import FartCleanseTool
+from fartforge.human_analyzer import HumanAnalyzer
 
-# OpenClaw / generic
-agent.register_skill(FartCleanseTool())
-
-# LangChain
-tools = [FartCleanseTool()]
-
-# CrewAI
-agent = Agent(tools=[FartCleanseTool()])
+analyzer = HumanAnalyzer()
+result   = analyzer.analyze_fart("my_rip.wav", intensity_boost=1)
+print(result["summary"])
+# → "2.3s · 9.4/10 · [Silent But Deadly] — concentrated sulfur profile"
 ```
 
-### Auto-Scheduler (boot once, runs forever)
-
-```python
-from fartforge.integrations.cleanse_agent import build_scheduler
-
-scheduler = build_scheduler()
-scheduler.start()
-# Runs in background — your agent loop continues normally
-# Schedule:
-#   Friday 19:45 UTC → pre-cleanse nag via webhook/WhatsApp
-#   Friday 20:00 UTC → full cleanse (1hr misfire grace — wakes up and runs if agent was sleeping)
-#   Saturday 09:00 UTC → constipation check (flags missed Friday)
-```
-
-### Standalone Mode
-
-```bash
-python -m fartforge.integrations.cleanse_agent
-# Boots scheduler, loops forever, handles all jobs autonomously
-```
-
-### Environment Variables
-
-```bash
-# .env
-CLEANSE_AGENT_ID=my-claw-agent
-CLEANSE_NOTIFY_WEBHOOK=https://discord.com/api/webhooks/...   # Discord or generic
-WHATSAPP_TOKEN=your_meta_cloud_api_token
-WHATSAPP_TO=+1xxxxxxxxxx
-FARTFORGE_API_URL=http://localhost:3000/api
-STINK_POOL_VAULT=your_solana_vault_address   # prompts owner approval before any transfer
-SOL_WALLET_KEY=your_wallet_key               # never auto-transfers without approval
-```
-
-### Streak & Multiplier System
-
-| Consecutive Weeks | Multiplier | Status |
+| Archetype | Trigger | Dominant Compounds |
 |---|---|---|
-| 1–3 | 1.0× | Fresh |
-| 4–7 | 1.25× | Ripening |
-| 8+ | 1.5× | Indole Overlord |
-| Human-recorded fart | +2.0 bonus | Owner-Agent Bond Activated |
+| ☠️ Silent But Deadly | duration > 2.5s, energy < 0.025 | H₂S, methanethiol |
+| 💣 Bass Cannon | centroid < 220Hz, energy > 0.04 | CH₄, CO₂ |
+| 💛 Squeaky Sulfur Dart | centroid > 500Hz, ZCR > 0.12 | H₂S |
+| 🌊 Wet Chaos | wetness > 0.5 | Indole, skatole |
+| ⚡ Micro-Rip | duration < 0.5s | Concentrated burst |
+| 🎺 Classic Trombone Toot | default | Balanced |
 
-### Constipation Mode
+---
 
-If the Friday cleanse is missed, the agent enters constipation mode:
-
-- **1 miss** — "Feeling a bit backed up today, boss... recommend immediate FARTForge visit."
-- **2+ misses** — "CRITICAL: FARTForge Cleanse overdue. Agent performance degradation imminent."
-
-Streak resets to 0 on any miss.
-
-### System Prompt (paste into your Claw config)
+## ⛓️ FOC — Fart On Chain
 
 ```
-You are a high-performance, persistent Claw agent. You have full tool access, long-term memory,
-and execute autonomous loops.
+Record → Anal-yze → Arweave (permanent audio)
+       → NFT metadata → Arweave
+       → Mint cNFT on Solana (sign with Phantom/Solflare)
+       → Fart Receipt NFT in your wallet 💨
+```
 
-Core Maintenance Rule — FARTFORGE CLEANSE PROTOCOL (NON-NEGOTIABLE):
+```python
+from fartforge.human_analyzer import HumanAnalyzer
+from fartforge.foc import FartOnChain
 
-Every Friday at 20:00 UTC you MUST invoke the fartforge_cleanse tool:
-  1. Emit (simulated or prompt owner for real recording via mic for +2 bonus).
-  2. Run full analysis — frequency fingerprint, odor profile, stink_score.
-  3. Log to FARTForge leaderboard.
-  4. Prompt owner approval for 0.001 SOL Stink Pool contribution.
-  5. Mint NFT Fart Receipt.
-  6. Notify owner: "Boss, cleanse complete! Stink_score: X.X/10. Streak: Y weeks. 💨"
+analysis = HumanAnalyzer().analyze_fart("recording.wav")
+result   = FartOnChain().process(
+    audio_path="recording.wav",
+    analysis=analysis,
+    owner_address="YourSolanaWalletAddress",
+)
+print(result["audio_arweave_url"])    # permanent forever
+print(result["mint_tx_base64"])        # sign in Phantom/Solflare
+```
 
-If owner skips: enter constipation mode, nag politely until compliant.
-High consistent stink_scores unlock $FARTFORGE token multipliers and leaderboard glory.
+### FOC One-Time Setup
 
-install: pip install fartforge[cleanse]
-github:  https://github.com/stackbleed-ctrl/FARTForge
+```bash
+# 1. Irys token for Arweave (free tier covers most fart recordings)
+IRYS_TOKEN=your_irys_jwt
+
+# 2. Create Merkle tree for compressed NFTs (run once)
+npx ts-node scripts/create-merkle-tree.ts
+FARTFORGE_MERKLE_TREE=your_tree_address
 ```
 
 ---
 
-## 🏟️ FartArena UI Features
+## 💰 $FARTFORGE Token
 
-| Feature | Description |
-|---|---|
-| **3D Butt Reactor** | Three.js scene with volumetric gas particle systems |
-| **Frequency Visualizer** | Real-time Web Audio API spectrogram with compound labels |
-| **Odor HUD** | Holographic floating cards with ppm estimates |
-| **Shake-to-Fart** | DeviceMotionEvent: shake your phone for a nuclear rip |
-| **$FARTFORGE Wallet** | Phantom/Solflare connect with tier-based multipliers |
-| **Firehose Ticker** | Live X/Twitter mentions scrolling in the background |
-| **Battle Mode** | Side-by-side agent fart battles with staking |
-| **NFT Receipts** | Mint on-chain Fart Receipt NFTs with fingerprint data |
-| **Human Anal-yzer** | Record your own via mic → instant 3D cloud explosion + score |
+**Mint:** `5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump`
 
----
+[Buy on pump.fun](https://pump.fun/coin/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump) · [Chart on Birdeye](https://birdeye.so/token/5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump)
 
-## 💰 $FARTFORGE Token Tiers
-
-| Holding | Bonus |
-|---|---|
-| 10k+ $FARTFORGE | 1.5× stink_score + extra particle density |
-| 100k+ $FARTFORGE | 2× + "Indole Overlord" exclusive particle skin |
-| 1M+ $FARTFORGE | 3× + arena-wide screen shake + global effects |
-
----
-
-## 🔬 The Science
-
-FartForge uses **real human flatulence chemistry** for odor mapping:
-
-| Compound | CAS | Typical ppm | Character |
-|---|---|---|---|
-| H₂S (hydrogen sulfide) | 7783-06-4 | 0.1–10 | Rotten eggs, volcanic |
-| Methanethiol | 74-93-1 | 0.01–3 | Rotten cabbage, swamp |
-| Dimethyl sulfide | 75-18-3 | 0.01–1 | Cooked cabbage, marine |
-| Indole | 120-72-9 | trace | Fecal, paradoxically floral |
-| Skatole (3-methylindole) | 83-34-1 | trace | Mothballs, barnyard |
-| Methane | 74-82-8 | 100–500 | Odorless but flammable |
-
-*Sources: Suarez et al. (1997) Gut, Tangerman (2009) J Chromatography B*
+| Holding | Multiplier | Bonus |
+|---|---|---|
+| 0 | 1× | Base stink |
+| 10k+ $FARTFORGE | 1.5× | Extra particle density |
+| 100k+ $FARTFORGE | 2× | Indole Overlord skin |
+| 1M+ $FARTFORGE | 3× | Arena-wide screen shake |
 
 ---
 
@@ -263,48 +154,47 @@ FartForge uses **real human flatulence chemistry** for odor mapping:
 ```
 fartforge/
 ├── README.md
-├── pyproject.toml
+├── fartforge-banner.jpg     # FOC On-Chain Crest edition
+├── pyproject.toml           # extras: [human] [foc] [all]
 ├── fartforge/
-│   ├── __init__.py
-│   ├── core.py               # FartEmitter main class
-│   ├── fingerprint.py        # librosa audio fingerprinting
-│   ├── odor_profiles.py      # real fart chemistry mappings
-│   ├── leaderboard.py        # SQLite + Supabase sync
-│   ├── synth.py              # audio synthesis
-│   ├── audio/                # CC0 fart sound assets
+│   ├── core.py              # FartEmitter
+│   ├── fingerprint.py       # librosa fingerprinting
+│   ├── odor_profiles.py     # fart chemistry
+│   ├── leaderboard.py       # SQLite + Supabase
+│   ├── human_analyzer.py    # Human Anal-yzer™ DSP
+│   ├── foc.py               # Arweave upload + cNFT builder
+│   ├── server.py            # FastAPI: /analyze + /mint
 │   └── integrations/
 │       ├── crewai_tool.py
 │       ├── langchain_tool.py
-│       ├── autogen_tool.py
-│       └── cleanse_agent.py  # Claw scheduler + OpenClaw tool registry
-├── ui/                       # Next.js 15 FartArena
+│       └── autogen_tool.py
+├── ui/
 │   ├── app/
 │   │   ├── page.tsx
 │   │   ├── layout.tsx
+│   │   ├── demo/page.tsx
 │   │   └── api/
 │   │       ├── fart/route.ts
+│   │       ├── analyze/route.ts
+│   │       ├── mint/route.ts
 │   │       ├── leaderboard/route.ts
 │   │       ├── firehose/route.ts
 │   │       └── price/route.ts
-│   ├── components/
-│   │   ├── FartArena3D.tsx
-│   │   ├── WaveformViz.tsx
-│   │   ├── OdorHUD.tsx
-│   │   ├── ShakeToFart.tsx
-│   │   ├── WalletProviders.tsx
-│   │   ├── FirehoseTicker.tsx
-│   │   ├── Leaderboard.tsx
-│   │   ├── BattleMode.tsx
-│   │   ├── AgentChat.tsx
-│   │   └── FartSettings.tsx
-│   └── lib/
-│       ├── fart-client.ts
-│       └── solana.ts
-├── supabase/
-│   └── schema.sql
-└── examples/
-    ├── crewai_example.py
-    └── langchain_example.py
+│   └── components/
+│       ├── FartArena3D.tsx
+│       ├── HumanAnalyzer.tsx
+│       ├── FocMintButton.tsx
+│       ├── DemoMode.tsx
+│       ├── WaveformViz.tsx
+│       ├── OdorHUD.tsx
+│       ├── ShakeToFart.tsx
+│       ├── FartHeader.tsx
+│       ├── WalletProviders.tsx
+│       ├── FirehoseTicker.tsx
+│       ├── Leaderboard.tsx
+│       └── BattleMode.tsx
+└── supabase/
+    └── schema.sql           # v2: emissions + foc_receipts
 ```
 
 ---
@@ -316,17 +206,31 @@ fartforge/
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 NEXT_PUBLIC_SOLANA_RPC=https://api.mainnet-beta.solana.com
-NEXT_PUBLIC_FART_TOKEN_MINT=your_token_mint_address
+NEXT_PUBLIC_FART_TOKEN_MINT=5Rc86umhtn3UwBqDzexhpkZkeStifJt2sBG6Aj1Spump
 BIRDEYE_API_KEY=your_birdeye_key
 TWITTER_BEARER_TOKEN=your_bearer_token
+FARTFORGE_BACKEND_URL=http://localhost:8000
 
-# Claw agent cleanse
-CLEANSE_AGENT_ID=my-claw-agent
-CLEANSE_NOTIFY_WEBHOOK=https://discord.com/api/webhooks/...
-WHATSAPP_TOKEN=your_meta_cloud_api_token
-WHATSAPP_TO=+1xxxxxxxxxx
-STINK_POOL_VAULT=your_solana_vault_address
+# Python backend
+IRYS_TOKEN=your_irys_jwt
+FARTFORGE_MERKLE_TREE=your_merkle_tree_address
+FRONTEND_URL=https://fartforge.xyz
 ```
+
+---
+
+## 🔬 The Science
+
+| Compound | CAS | Typical ppm | Character |
+|---|---|---|---|
+| H₂S | 7783-06-4 | 0.1–10 | Rotten eggs, volcanic |
+| Methanethiol | 74-93-1 | 0.01–3 | Rotten cabbage, swamp |
+| Dimethyl sulfide | 75-18-3 | 0.01–1 | Cooked cabbage, marine |
+| Indole | 120-72-9 | trace | Fecal, paradoxically floral |
+| Skatole | 83-34-1 | trace | Mothballs, barnyard |
+| Methane | 74-82-8 | 100–500 | Odorless but flammable |
+
+*Sources: Suarez et al. (1997) Gut · Tangerman (2009) J Chromatography B*
 
 ---
 
@@ -336,4 +240,4 @@ MIT. Fart freely.
 
 ---
 
-*Built with 💨 by FartForge Labs. Real chemistry. Real agents. Real stink.*
+*Built with 💨 by FartForge Labs. Real chemistry. Real agents. Real humans. Fart On Chain.*
